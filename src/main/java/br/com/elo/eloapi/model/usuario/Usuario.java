@@ -2,6 +2,7 @@ package br.com.elo.eloapi.model.usuario;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -52,6 +53,20 @@ public class Usuario implements UserDetails, Serializable {
     @Column(name = "tel_whats")
     private String telWhats;
 
+    @Column(name = "uri_perfil")
+    private String uriPerfil;
+
+    @Column(name = "st_habilitado")
+    @NotNull
+    private Boolean stHabilitado;
+
+    // Esses dois caras servem para evitar ficar percorrendo a tabela de comentarios para conseguir montar as avaliacoes sempre
+    @Column(name = "qt_avaliacao_geral")
+    private Double qtAvaliacaoGeral; // Valor no geral
+
+    @Column(name = "qt_avaliacoes")
+    private Integer qtAvalicaoes; // Quantas avaliações tem
+
     @CreationTimestamp
     @Column(updatable = false, name = "dt_criacao")
     private LocalDateTime dtCriacao;
@@ -89,5 +104,9 @@ public class Usuario implements UserDetails, Serializable {
     @Override
     public boolean isEnabled() {
         return UserDetails.super.isEnabled();
+    }
+
+    public String nomeCompleto() {
+        return nome + " " + sobrenome;
     }
 }

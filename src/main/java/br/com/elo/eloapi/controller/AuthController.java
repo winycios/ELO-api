@@ -7,6 +7,7 @@ import br.com.elo.eloapi.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
+import lombok.Getter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

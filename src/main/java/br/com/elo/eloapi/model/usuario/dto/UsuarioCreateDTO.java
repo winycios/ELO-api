@@ -18,7 +18,6 @@ public class UsuarioCreateDTO {
     private String nome;
 
     @NotBlank
-    @Size(min = 3)
     private String sobrenome;
 
     @Email
@@ -28,9 +27,12 @@ public class UsuarioCreateDTO {
     private String telContato;
 
     @NotBlank
-    @Size(min = 3, max = 20)
+    @Size(min = 8, max = 20)
     private String senha;
 
     @NotNull
     private Boolean isDuplicarTel;
+
+    @NotNull
+    private CadastroAcao cadastroAcao;
 }

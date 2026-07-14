@@ -20,8 +20,11 @@ public class UsuarioMapper {
         usuario.setEmail(dto.getEmail());
         usuario.setTelCelular(dto.getTelContato());
         if (dto.getIsDuplicarTel()) {
-        usuario.setTelWhats(dto.getTelContato());
+            usuario.setTelWhats(dto.getTelContato());
         }
+
+        usuario.setStHabilitado(!dto.getCadastroAcao().isCadastrarProfissional());
+
         usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
         return usuario;
     }
