@@ -12,7 +12,7 @@ import br.com.elo.eloapi.model.usuario.dto.LoginResponseDTO;
 import br.com.elo.eloapi.model.usuario.dto.UsuarioCreateDTO;
 import br.com.elo.eloapi.model.usuario.mapper.UsuarioMapper;
 import br.com.elo.eloapi.repository.ProfissionalRepository;
-import br.com.elo.eloapi.repository.RefreshTokenStore;
+import br.com.elo.eloapi.repository.RedisStore;
 import br.com.elo.eloapi.repository.UsuarioRepository;
 import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +34,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UsuarioMapper usuarioMapper;
     private final JwtService jwtService;
-    private final RefreshTokenStore refreshTokenStore;
+    private final RedisStore redisStore;
 
     @Value("${security.jwt.access-token.expiration}")
     private long accessTokenExpiration;
@@ -43,13 +43,13 @@ public class AuthService {
     private long refreshTokenExpiration;
 
 
-    public AuthService(UsuarioRepository usuarioRepository, ProfissionalRepository profissionalRepository, AuthenticationManager authenticationManager, UsuarioMapper usuarioMapper, JwtService jwtService, RefreshTokenStore refreshTokenStore) {
+    public AuthService(UsuarioRepository usuarioRepository, ProfissionalRepository profissionalRepository, AuthenticationManager authenticationManager, UsuarioMapper usuarioMapper, JwtService jwtService, RedisStore redisStore) {
         this.usuarioRepository = usuarioRepository;
         this.profissionalRepository = profissionalRepository;
         this.authenticationManager = authenticationManager;
         this.usuarioMapper = usuarioMapper;
         this.jwtService = jwtService;
-        this.refreshTokenStore = refreshTokenStore;
+        this.redisStore = redisStore;
     }
 
     public void createUser(UsuarioCreateDTO usuarioCreateDto) {
@@ -83,7 +83,7 @@ public class AuthService {
         }
 
         Profissional profissional = profissionalRepository.findByUsuarioEmail(email).orElseThrow(() -> new ResourceNotFound("Usuário não encontrado!"));
-        RefreshTokenData tokenData = refreshTokenStore.findHset(String.format(RefreshTokenStore.KEY_TEMPLATE_AUTH, profissional.getUsuario().getId()), deviceCode, RefreshTokenData.class).orElseThrow(() -> new UnauthorizedException("Sessão do dispositivo não encontrada ou expirada."));
+        RefreshTokenData tokenData = redisStore.findHset(String.format(RedisStore.KEY_TEMPLATE_AUTH, profissional.getUsuario().getId()), deviceCode, RefreshTokenData.class).orElseThrow(() -> new UnauthorizedException("Sessão do dispositivo não encontrada ou expirada."));
 
         if (!MessageDigest.isEqual(tokenData.tokenHash().getBytes(StandardCharsets.UTF_8), sha256(token).getBytes(StandardCharsets.UTF_8))) {
             throw new UnauthorizedException("Refresh token não corresponde ao dispositivo.");
@@ -102,7 +102,7 @@ public class AuthService {
                     jwtService.extractTokenId(refreshToken),
                     sha256(refreshToken),
                     profissional.getUsuario().getId());
-            refreshTokenStore.saveHSet(String.format(RefreshTokenStore.KEY_TEMPLATE_AUTH, profissional.getUsuario().getId()), deviceCode, data, Duration.ofMillis(refreshTokenExpiration));
+            redisStore.saveHSet(String.format(RedisStore.KEY_TEMPLATE_AUTH, profissional.getUsuario().getId()), deviceCode, data, Duration.ofMillis(refreshTokenExpiration));
         }
 
         return new LoginResponseDTO(profissional.getId(), accessToken, refreshToken, profissional.getUsuario().nomeCompleto(), profissional.getUsuario().getUriPerfil(), profissional.getUriPerfil(), profissional.getStHabilitado(), profissional.getUsuario().getStHabilitado());

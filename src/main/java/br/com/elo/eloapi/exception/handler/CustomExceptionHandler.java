@@ -1,5 +1,6 @@
 package br.com.elo.eloapi.exception.handler;
 
+import br.com.elo.eloapi.exception.BadRequestException;
 import br.com.elo.eloapi.exception.ConflictException;
 import br.com.elo.eloapi.exception.ResourceNotFound;
 import br.com.elo.eloapi.exception.UnauthorizedException;
@@ -30,8 +31,9 @@ public class CustomExceptionHandler {
                 .map(error -> String.format("%s - %s", error.getField(), error.getDefaultMessage()))
                 .collect(Collectors.joining("\n"));
 
-        ModelError err = new ModelError(Instant.now(), HttpStatus.UNAUTHORIZED.value(), "Erro de validação", errorResponse, request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(err);
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ModelError err = new ModelError(Instant.now(), status.value(), "Erro de validação", errorResponse, request.getRequestURI());
+        return ResponseEntity.status(status).body(err);
     }
 
     @ExceptionHandler(ResourceNotFound.class)
@@ -63,6 +65,29 @@ public class CustomExceptionHandler {
                 request.getRequestURI());
 
         logger.info(err.log());
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ModelError> exceptionPersonalized(BadRequestException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ModelError err = new ModelError(Instant.now(), status.value(), status.toString(), e.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ModelError> handleUnexpectedException(Exception e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        ModelError err = new ModelError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "Ocorreu um erro interno.",
+                request.getRequestURI()
+        );
+
+        logger.error("Erro não tratado em {}", request.getRequestURI(), e);
         return ResponseEntity.status(status).body(err);
     }
 }

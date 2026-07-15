@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`usuario` (
     `st_habilitado` TINYINT(1) NOT NULL,
     PRIMARY KEY (`id_usuario`))
     ENGINE = InnoDB
-    AUTO_INCREMENT = 6
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE UNIQUE INDEX `ds_email_UNIQUE` ON `database_elo`.`usuario` (`ds_email` ASC) VISIBLE;
@@ -101,13 +100,15 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`reserva_status` (
 -- Table `database_elo`.`categoria_geral`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `database_elo`.`categoria_geral` (
-                                                                `id_categoria_Geral` INT NOT NULL AUTO_INCREMENT,
+                                                                `id_categoria_geral` INT NOT NULL AUTO_INCREMENT,
                                                                 `nm_categoria` VARCHAR(100) NULL DEFAULT NULL,
-    PRIMARY KEY (`id_categoria_Geral`))
+    PRIMARY KEY (`id_categoria_geral`))
     ENGINE = InnoDB
     DEFAULT CHARACTER SET = utf8mb3;
 
-CREATE INDEX `categoria_geral_id_idx` ON `database_elo`.`categoria_geral` (`id_categoria_Geral` ASC) VISIBLE;
+CREATE UNIQUE INDEX `uk_categoria_geral_nome` ON `database_elo`.`categoria_geral` (`nm_categoria` ASC) VISIBLE;
+
+CREATE INDEX `categoria_geral_id_idx` ON `database_elo`.`categoria_geral` (`id_categoria_geral` ASC) VISIBLE;
 
 
 -- -----------------------------------------------------
@@ -120,9 +121,11 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`categoria_especifica` (
     PRIMARY KEY (`id_categoria_especifica`),
     CONSTRAINT `fk_categoria_geral_id`
     FOREIGN KEY (`fk_id_categoria_geral`)
-    REFERENCES `database_elo`.`categoria_geral` (`id_categoria_Geral`))
+    REFERENCES `database_elo`.`categoria_geral` (`id_categoria_geral`))
     ENGINE = InnoDB
     DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE UNIQUE INDEX `uk_categoria_especifica` ON `database_elo`.`categoria_especifica` (`fk_id_categoria_geral` ASC, `nm_categoria_especifica` ASC) VISIBLE;
 
 CREATE INDEX `fk_categoria_geral_id_idx` ON `database_elo`.`categoria_especifica` (`fk_id_categoria_geral` ASC) VISIBLE;
 
@@ -272,6 +275,10 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`publicacao` (
 CREATE INDEX `fk_Publicacao_Profissional1_idx` ON `database_elo`.`publicacao` (`fk_profissional_usuario_id` ASC) VISIBLE;
 
 CREATE INDEX `fk_Publicacao_Categoria_Especifica1_idx` ON `database_elo`.`publicacao` (`fk_categoria_Especifica_id` ASC) VISIBLE;
+
+CREATE INDEX `idx_publicacao_feed` ON `database_elo`.`publicacao` (`st_ativo` ASC, `dt_publicacao` DESC, `id_publicacao` DESC) VISIBLE;
+
+CREATE INDEX `idx_publicacao_feed_categoria` ON `database_elo`.`publicacao` (`fk_categoria_Especifica_id` ASC, `st_ativo` ASC, `dt_publicacao` DESC, `id_publicacao` DESC) VISIBLE;
 
 
 -- -----------------------------------------------------
