@@ -50,7 +50,7 @@ public class VitrineService {
 
         Map<Long, br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida> curtidas;
         if (usuario != null) {
-            curtidas = curtidaRepository.contarPorPublicacoes(ids).stream()
+            curtidas = curtidaRepository.contarPorPublicacoesECurtida(ids, usuario.getId()).stream()
                     .collect(Collectors.toMap(PublicacaoCurtidaRepository.Contagem::getPublicacaoId,
                             curtida -> new br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida(curtida.getPublicacaoId(), curtida.getTotal(), curtida.getCurtida())));
         } else {

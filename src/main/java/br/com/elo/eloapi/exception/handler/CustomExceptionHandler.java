@@ -10,11 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @ControllerAdvice
@@ -31,7 +33,7 @@ public class CustomExceptionHandler {
                 .map(error -> String.format("%s - %s", error.getField(), error.getDefaultMessage()))
                 .collect(Collectors.joining("\n"));
 
-        HttpStatus status = HttpStatus.BAD_REQUEST;
+        HttpStatus status = HttpStatus.UNAUTHORIZED;
         ModelError err = new ModelError(Instant.now(), status.value(), "Erro de validação", errorResponse, request.getRequestURI());
         return ResponseEntity.status(status).body(err);
     }
@@ -48,10 +50,10 @@ public class CustomExceptionHandler {
     }
 
 
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ModelError> exceptionPersonalized(UnauthorizedException e, HttpServletRequest request) {
+    @ExceptionHandler({UnauthorizedException.class, BadCredentialsException.class})
+    public ResponseEntity<ModelError> exceptionPersonalized(Exception e, HttpServletRequest request) {
         HttpStatus status = HttpStatus.UNAUTHORIZED;
-        ModelError err = new ModelError(Instant.now(), status.value(), status.toString(), e.getMessage(),
+        ModelError err = new ModelError(Instant.now(), status.value(), status.toString(), Objects.equals(e.getMessage(), "Bad credentials") ? "Email ou senha inválido" : e.getMessage(),
                 request.getRequestURI());
 
         logger.info(err.log());

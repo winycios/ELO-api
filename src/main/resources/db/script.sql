@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`reserva_status` (
 CREATE TABLE IF NOT EXISTS `database_elo`.`categoria_geral` (
                                                                 `id_categoria_geral` INT NOT NULL AUTO_INCREMENT,
                                                                 `nm_categoria` VARCHAR(100) NULL DEFAULT NULL,
+    `ds_icon` VARCHAR(50) NULL DEFAULT NULL,
     PRIMARY KEY (`id_categoria_geral`))
     ENGINE = InnoDB
     DEFAULT CHARACTER SET = utf8mb3;

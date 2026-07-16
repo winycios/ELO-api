@@ -31,4 +31,7 @@ public class CategoriaGeral implements Serializable {
     @Column(name = "nm_categoria")
     private String nmCategoria;
 
+    @Column(name = "ds_icon")
+    private String dsIcon;
+
 }

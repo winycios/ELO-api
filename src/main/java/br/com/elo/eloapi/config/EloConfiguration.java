@@ -1,6 +1,5 @@
 package br.com.elo.eloapi.config;
 
-import br.com.elo.eloapi.exception.UnauthorizedException;
 import br.com.elo.eloapi.repository.UsuarioRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -27,7 +26,7 @@ public class EloConfiguration {
 
     @Bean
     UserDetailsService userDetailsService() {
-        return email -> usuarioRepository.findByEmail(email).orElseThrow(() -> new UnauthorizedException("Usuário não encontrado."));
+        return email -> usuarioRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado."));
     }
 
     @Bean
