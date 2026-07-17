@@ -1,6 +1,3 @@
-select * from profissional;
-
-
 INSERT INTO categoria_geral (nm_categoria, ds_icon)
 VALUES
     ('Eletricista', 'Bolt'),

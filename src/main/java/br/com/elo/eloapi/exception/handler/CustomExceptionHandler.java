@@ -6,6 +6,7 @@ import br.com.elo.eloapi.exception.ResourceNotFound;
 import br.com.elo.eloapi.exception.UnauthorizedException;
 import br.com.elo.eloapi.model.erro.ModelError;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,18 @@ public class CustomExceptionHandler {
                 .collect(Collectors.joining("\n"));
 
         HttpStatus status = HttpStatus.UNAUTHORIZED;
+        ModelError err = new ModelError(Instant.now(), status.value(), "Erro de validação", errorResponse, request.getRequestURI());
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ModelError> exceptionPersonalized(ConstraintViolationException ex, HttpServletRequest request) {
+        String errorResponse = ex.getConstraintViolations()
+                .stream()
+                .map(violation -> String.format("%s - %s", violation.getPropertyPath(), violation.getMessage()))
+                .collect(Collectors.joining("\n"));
+
+        HttpStatus status = HttpStatus.BAD_REQUEST;
         ModelError err = new ModelError(Instant.now(), status.value(), "Erro de validação", errorResponse, request.getRequestURI());
         return ResponseEntity.status(status).body(err);
     }
