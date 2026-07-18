@@ -2,10 +2,9 @@ package br.com.elo.eloapi.service;
 
 import br.com.elo.eloapi.exception.BadRequestException;
 import br.com.elo.eloapi.exception.ResourceNotFound;
-import br.com.elo.eloapi.model.publicacao.Publicacao;
-import br.com.elo.eloapi.model.publicacao.PublicacaoComentario;
+import br.com.elo.eloapi.model.profissional.Profissional;
+import br.com.elo.eloapi.model.publicacao.*;
 import br.com.elo.eloapi.model.publicacao.PublicacaoCurtida;
-import br.com.elo.eloapi.model.publicacao.PublicacaoCurtidaId;
 import br.com.elo.eloapi.model.publicacao.dto.*;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.repository.*;
@@ -14,6 +13,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,12 +28,18 @@ public class VitrineService {
     private final PublicacaoImagemRepository imagemRepository;
     private final PublicacaoCurtidaRepository curtidaRepository;
     private final PublicacaoComentarioRepository comentarioRepository;
+    private final CategoriaEspecificaRepository categoriaEspecificaRepository;
     private final CursorCodec cursorCodec;
+    private final PublicacaoImagemRepository publicacaoImagemRepository;
+    private final ProfissionalRepository profissionalRepository;
 
     @Transactional(readOnly = true)
-    public CursorPageRS<PublicacaoFeedRS> listarFeed(Long categoriaId, String cursor, Usuario usuario) {
+    public CursorPageRS<PublicacaoFeedRS> listarFeed(Long categoriaId, String cursor, Usuario usuario, Boolean isProfissional) {
         CursorCodec.CursorValue cursorValue = cursorCodec.decode(cursor);
-        List<Publicacao> encontrados = publicacaoRepository.buscarFeed(categoriaId, cursorValue.data(), cursorValue.id(), PageRequest.of(0, PAGE_SIZE + 1));
+        Long idUsuario = usuario == null ? null : usuario.getId();
+        List<Publicacao> encontrados = publicacaoRepository.buscarFeed(
+                categoriaId, idUsuario, isProfissional, cursorValue.data(), cursorValue.id(),
+                PageRequest.of(0, PAGE_SIZE + 1));
 
         boolean hasNext = encontrados.size() > PAGE_SIZE;
         List<Publicacao> pagina = encontrados.stream().limit(PAGE_SIZE).toList();
@@ -97,8 +104,7 @@ public class VitrineService {
                     .orElseThrow(() -> new BadRequestException("Comentário inválido para esta publicação."));
         }
 
-        PublicacaoComentario comentario = comentarioRepository.save(
-                new PublicacaoComentario(publicacao, usuario, pai, request.texto().trim()));
+        PublicacaoComentario comentario = comentarioRepository.save(new PublicacaoComentario(publicacao, usuario, pai, request.texto().trim()));
         return toComentarioResponse(comentario);
     }
 
@@ -119,6 +125,35 @@ public class VitrineService {
             nextCursor = cursorCodec.encode(ultimo.getDataComentario(), ultimo.getId());
         }
         return new CursorPageRS<>(items, nextCursor, hasNext);
+    }
+
+    @Transactional
+    public PublicacaoFeedRS salvarPublicacao(PublicacaoCreateDTO publicacaoCreateDTO, Usuario usuario) {
+        Publicacao publicacao = new Publicacao();
+
+        Profissional profissional = profissionalRepository.findById(usuario.getId()).orElseThrow(() -> new ResourceNotFound("Profissional não encontrado"));
+
+        publicacao.setDsPublicacao(publicacaoCreateDTO.getDsPublicacao());
+        publicacao.setProfissional(profissional);
+        publicacao.setCategoriaEspecifica(categoriaEspecificaRepository.findById(publicacaoCreateDTO.getIdCategoriaEspecifica()).orElseThrow(() -> new ResourceNotFound("Categoria específica não encontrada")));
+        publicacao.setId(null);
+        publicacao.setDtPublicacao(LocalDateTime.now());
+        publicacao.setStAtivo(true);
+
+        publicacao = publicacaoRepository.save(publicacao);
+
+        Publicacao finalPublicacao = publicacao;
+        imagemRepository.saveAll(publicacaoCreateDTO.getPublicacaoImagemDTOList().stream().map(image -> new PublicacaoImagem(null, finalPublicacao, image.getUrlImagem(), image.getNrOrdem())).toList());
+
+        return toFeedResponse(publicacao, new HashMap<>(), new HashMap<>(), new HashMap<>());
+    }
+
+    @Transactional
+    public void desativarPublicacao(Usuario usuario, Long publlicacaoId) {
+        Profissional profissional = profissionalRepository.findById(usuario.getId()).orElseThrow(() -> new ResourceNotFound("Profissional não encontrado"));
+        Publicacao publicacao = publicacaoRepository.findByIdAndProfissionalIdAndStAtivoTrue(publlicacaoId, profissional.getId()).orElseThrow(() -> new ResourceNotFound("Publicacao ativo não encontrado para este profissional"));
+        publicacao.setStAtivo(false);
+        publicacaoRepository.save(publicacao);
     }
 
     private Publicacao buscarPublicacaoAtiva(Long id) {

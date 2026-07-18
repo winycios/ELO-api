@@ -1,9 +1,6 @@
 package br.com.elo.eloapi.controller;
 
-import br.com.elo.eloapi.model.publicacao.dto.ComentarioCreateRQ;
-import br.com.elo.eloapi.model.publicacao.dto.ComentarioRS;
-import br.com.elo.eloapi.model.publicacao.dto.CursorPageRS;
-import br.com.elo.eloapi.model.publicacao.dto.PublicacaoFeedRS;
+import br.com.elo.eloapi.model.publicacao.dto.*;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.service.VitrineService;
 import jakarta.validation.Valid;
@@ -25,7 +22,26 @@ public class VitrineController {
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) String cursor,
             @AuthenticationPrincipal Usuario usuario) {
-        return ResponseEntity.ok().body(vitrineService.listarFeed(categoriaId, cursor, usuario));
+        return ResponseEntity.ok().body(vitrineService.listarFeed(categoriaId, cursor, usuario, false));
+    }
+
+    @GetMapping("profissional/listar")
+    public ResponseEntity<CursorPageRS<PublicacaoFeedRS>> listarFeedPorProfissional(
+            @RequestParam(required = false) Long categoriaId,
+            @RequestParam(required = false) String cursor,
+            @AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok().body(vitrineService.listarFeed(categoriaId, cursor, usuario, true));
+    }
+
+    @PostMapping("profissional/publicacao")
+    public ResponseEntity<PublicacaoFeedRS> salvarPublicacao(@RequestBody PublicacaoCreateDTO publicacaoCreateDTO, @AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok().body(vitrineService.salvarPublicacao(publicacaoCreateDTO, usuario));
+    }
+
+    @DeleteMapping("profissional/publicacao/{id}")
+    public ResponseEntity<Void> desativarPublicacao(@AuthenticationPrincipal Usuario usuario, @PathVariable Long id) {
+        vitrineService.desativarPublicacao(usuario, id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/publicacoes/{publicacaoId}/curtidas")

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 
 @Repository
@@ -19,6 +20,7 @@ public interface PublicacaoRepository extends JpaRepository<Publicacao, Long> {
         select p from Publicacao p
          where p.stAtivo = true
            and (:categoriaId is null or p.categoriaEspecifica.id = :categoriaId)
+           and (:isProfissional = false or p.profissional.usuario.id = :idUsuario)
            and (:cursorData is null
                 or p.dtPublicacao < :cursorData
                 or (p.dtPublicacao = :cursorData and p.id < :cursorId))
@@ -26,7 +28,11 @@ public interface PublicacaoRepository extends JpaRepository<Publicacao, Long> {
         """)
     List<Publicacao> buscarFeed(
             @Param("categoriaId") Long categoriaId,
+            @Param("idUsuario") Long idUsuario,
+            @Param("isProfissional") Boolean isProfissional,
             @Param("cursorData") LocalDateTime cursorData,
             @Param("cursorId") Long cursorId,
             Pageable pageable);
+
+    Optional<Publicacao> findByIdAndProfissionalIdAndStAtivoTrue(Long id, Long profissionalId);
 }
