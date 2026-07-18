@@ -17,6 +17,10 @@ public class RedisStore {
 
     public static final String KEY_TEMPLATE_AUTH = "auth:user:%d:refresh-tokens";
     public static final String KEY_CATEGORIES = "categories:all";
+    public static final String KEY_PROF_SERVICES = "services:profissional:%d";
+
+    public static final Duration CACHE_DURATION = Duration.ofDays(1);
+
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();

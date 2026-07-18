@@ -144,6 +144,7 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`servico` (
     `ds_tag` VARCHAR(200) NULL DEFAULT NULL,
     `ds_url_imagem` VARCHAR(400) NULL DEFAULT NULL,
     `tp_execucao` ENUM('presencial', 'remoto') NULL DEFAULT NULL,
+    `st_ativo` TINYINT NOT NULL DEFAULT 1,
     PRIMARY KEY (`id_servico`),
     CONSTRAINT `fk_Servico_Categoria_Especifica1`
     FOREIGN KEY (`Categoria_Especifica_id_categoria_especifica`)
