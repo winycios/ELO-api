@@ -6,6 +6,7 @@ import br.com.elo.eloapi.model.profissional.Profissional;
 import br.com.elo.eloapi.model.publicacao.*;
 import br.com.elo.eloapi.model.publicacao.PublicacaoCurtida;
 import br.com.elo.eloapi.model.publicacao.dto.*;
+import br.com.elo.eloapi.model.publicacao.mapper.PublicacaoMapper;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +14,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,7 +29,6 @@ public class VitrineService {
     private final PublicacaoComentarioRepository comentarioRepository;
     private final CategoriaEspecificaRepository categoriaEspecificaRepository;
     private final CursorCodec cursorCodec;
-    private final PublicacaoImagemRepository publicacaoImagemRepository;
     private final ProfissionalRepository profissionalRepository;
 
     @Transactional(readOnly = true)
@@ -51,28 +49,18 @@ public class VitrineService {
         Map<Long, List<PublicacaoImagemRS>> imagens = imagemRepository
                 .findByPublicacaoIdInOrderByPublicacaoIdAscOrdemAsc(ids).stream()
                 .collect(Collectors.groupingBy(
-                        imagem -> imagem.getPublicacao().getId(),
-                        Collectors.mapping(imagem -> new PublicacaoImagemRS(
-                                imagem.getId(), imagem.getUrl(), imagem.getOrdem()), Collectors.toList())));
+                        imagem -> imagem.getPublicacao().getId(), Collectors.mapping(PublicacaoMapper::toImageResponse, Collectors.toList())));
 
         Map<Long, br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida> curtidas;
         if (usuario != null) {
-            curtidas = curtidaRepository.contarPorPublicacoesECurtida(ids, usuario.getId()).stream()
-                    .collect(Collectors.toMap(PublicacaoCurtidaRepository.Contagem::getPublicacaoId,
-                            curtida -> new br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida(curtida.getPublicacaoId(), curtida.getTotal(), curtida.getCurtida())));
+            curtidas = curtidaRepository.contarPorPublicacoesECurtida(ids, usuario.getId()).stream().collect(Collectors.toMap(PublicacaoCurtidaRepository.Contagem::getPublicacaoId, curtida -> new br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida(curtida.getPublicacaoId(), curtida.getTotal(), curtida.getCurtida())));
         } else {
-            curtidas = curtidaRepository.contarPorPublicacoes(ids).stream()
-                    .collect(Collectors.toMap(PublicacaoCurtidaRepository.Contagem::getPublicacaoId,
-                            curtida -> new br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida(curtida.getPublicacaoId(), curtida.getTotal(), false)));
+            curtidas = curtidaRepository.contarPorPublicacoes(ids).stream().collect(Collectors.toMap(PublicacaoCurtidaRepository.Contagem::getPublicacaoId, curtida -> new br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida(curtida.getPublicacaoId(), curtida.getTotal(), false)));
         }
 
-        Map<Long, Long> comentarios = comentarioRepository.contarAtivosPorPublicacoes(ids).stream()
-                .collect(Collectors.toMap(PublicacaoComentarioRepository.Contagem::getPublicacaoId,
-                        PublicacaoComentarioRepository.Contagem::getTotal));
+        Map<Long, Long> comentarios = comentarioRepository.contarAtivosPorPublicacoes(ids).stream().collect(Collectors.toMap(PublicacaoComentarioRepository.Contagem::getPublicacaoId, PublicacaoComentarioRepository.Contagem::getTotal));
 
-        List<PublicacaoFeedRS> items = pagina.stream()
-                .map(publicacao -> toFeedResponse(publicacao, imagens, curtidas, comentarios))
-                .toList();
+        List<PublicacaoFeedRS> items = pagina.stream().map(publicacao -> PublicacaoMapper.toFeedResponse(publicacao, imagens, curtidas, comentarios)).toList();
         Publicacao ultimo = pagina.getLast();
         String nextCursor = hasNext ? cursorCodec.encode(ultimo.getDtPublicacao(), ultimo.getId()) : null;
         return new CursorPageRS<>(items, nextCursor, hasNext);
@@ -105,7 +93,7 @@ public class VitrineService {
         }
 
         PublicacaoComentario comentario = comentarioRepository.save(new PublicacaoComentario(publicacao, usuario, pai, request.texto().trim()));
-        return toComentarioResponse(comentario);
+        return PublicacaoMapper.toCommentResponse(comentario);
     }
 
     @Transactional(readOnly = true)
@@ -117,8 +105,9 @@ public class VitrineService {
         List<PublicacaoComentario> encontrados = comentarioRepository.buscarPagina(
                 publicacaoId, cursorValue.data(), cursorValue.id(), PageRequest.of(0, PAGE_SIZE + 1));
         boolean hasNext = encontrados.size() > PAGE_SIZE;
+
         List<PublicacaoComentario> pagina = encontrados.stream().limit(PAGE_SIZE).toList();
-        List<ComentarioRS> items = pagina.stream().map(this::toComentarioResponse).toList();
+        List<ComentarioRS> items = pagina.stream().map(PublicacaoMapper::toCommentResponse).toList();
         String nextCursor = null;
         if (hasNext) {
             PublicacaoComentario ultimo = pagina.get(pagina.size() - 1);
@@ -129,23 +118,19 @@ public class VitrineService {
 
     @Transactional
     public PublicacaoFeedRS salvarPublicacao(PublicacaoCreateDTO publicacaoCreateDTO, Usuario usuario) {
-        Publicacao publicacao = new Publicacao();
+        Publicacao publicacao = PublicacaoMapper.toEntity(publicacaoCreateDTO);
 
         Profissional profissional = profissionalRepository.findById(usuario.getId()).orElseThrow(() -> new ResourceNotFound("Profissional não encontrado"));
 
-        publicacao.setDsPublicacao(publicacaoCreateDTO.getDsPublicacao());
         publicacao.setProfissional(profissional);
         publicacao.setCategoriaEspecifica(categoriaEspecificaRepository.findById(publicacaoCreateDTO.getIdCategoriaEspecifica()).orElseThrow(() -> new ResourceNotFound("Categoria específica não encontrada")));
-        publicacao.setId(null);
-        publicacao.setDtPublicacao(LocalDateTime.now());
-        publicacao.setStAtivo(true);
-
         publicacao = publicacaoRepository.save(publicacao);
 
         Publicacao finalPublicacao = publicacao;
-        imagemRepository.saveAll(publicacaoCreateDTO.getPublicacaoImagemDTOList().stream().map(image -> new PublicacaoImagem(null, finalPublicacao, image.getUrlImagem(), image.getNrOrdem())).toList());
+        List<PublicacaoImagem> imagens = imagemRepository.saveAll(publicacaoCreateDTO.getPublicacaoImagemDTOList().stream().map(image -> PublicacaoMapper.toImageEntity(image, finalPublicacao)).toList());
 
-        return toFeedResponse(publicacao, new HashMap<>(), new HashMap<>(), new HashMap<>());
+        Map<Long, List<PublicacaoImagemRS>> imagensPorPublicacao = Map.of(publicacao.getId(), imagens.stream().map(PublicacaoMapper::toImageResponse).toList());
+        return PublicacaoMapper.toFeedResponse(publicacao, imagensPorPublicacao, Map.of(), Map.of());
     }
 
     @Transactional
@@ -157,33 +142,7 @@ public class VitrineService {
     }
 
     private Publicacao buscarPublicacaoAtiva(Long id) {
-        return publicacaoRepository.findById(id)
-                .filter(publicacao -> Boolean.TRUE.equals(publicacao.getStAtivo()))
-                .orElseThrow(() -> new ResourceNotFound("Publicação não encontrada."));
+        return publicacaoRepository.findById(id).filter(publicacao -> Boolean.TRUE.equals(publicacao.getStAtivo())).orElseThrow(() -> new ResourceNotFound("Publicação não encontrada."));
     }
 
-    private PublicacaoFeedRS toFeedResponse(
-            Publicacao p,
-            Map<Long, List<PublicacaoImagemRS>> imagens,
-            Map<Long, br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida> curtidas,
-            Map<Long, Long> comentarios) {
-        Usuario usuario = p.getProfissional().getUsuario();
-        return new PublicacaoFeedRS(
-                p.getId(), p.getDsPublicacao(), p.getDtPublicacao(),
-                p.getCategoriaEspecifica().getId(), p.getCategoriaEspecifica().getNmCategoria(),
-                p.getProfissional().getId(), usuario.nomeCompleto(), usuario.getUriPerfil(),
-                imagens.getOrDefault(p.getId(), List.of()),
-                curtidas.getOrDefault(p.getId(), new br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida(0L, 0L, false)).totalCurtida(),
-                comentarios.getOrDefault(p.getId(), 0L),
-                curtidas.getOrDefault(p.getId(), new br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida(0L, 0L, false)).isCurtido()
-        );
-    }
-
-    private ComentarioRS toComentarioResponse(PublicacaoComentario comentario) {
-        Usuario usuario = comentario.getUsuario();
-        return new ComentarioRS(
-                comentario.getId(), comentario.getTexto(), comentario.getDataComentario(),
-                comentario.getComentarioPai() == null ? null : comentario.getComentarioPai().getId(),
-                usuario.getId(), usuario.nomeCompleto(), usuario.getUriPerfil());
-    }
 }

@@ -24,6 +24,7 @@ public class CategoriaEspecifica implements Serializable {
 
     @Id
     @Column(name = "id_categoria_especifica")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "nm_categoria_especifica")

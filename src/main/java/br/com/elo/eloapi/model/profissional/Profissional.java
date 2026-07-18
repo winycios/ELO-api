@@ -47,6 +47,9 @@ public class Profissional implements Serializable {
     @Column(name = "qt_resposta_geral")
     private Integer qtRespostaGeral;
 
+    @Column(name = "qt_servicos_concluido")
+    private Integer qtServicoConcluido;
+
     @Column(name = "st_disponivel")
     private Boolean stDisponivel;
 

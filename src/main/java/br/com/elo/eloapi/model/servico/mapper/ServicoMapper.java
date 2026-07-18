@@ -15,7 +15,7 @@ import java.util.List;
 
 @Component
 @AllArgsConstructor
-public class ServicoMapper {
+public final class ServicoMapper {
 
     public static Servico toEntity(ServicoCreateDTO dto) {
         Servico servico = new Servico();

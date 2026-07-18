@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @AllArgsConstructor
-public class UsuarioMapper {
+public final class UsuarioMapper {
 
     private final PasswordEncoder passwordEncoder;
 

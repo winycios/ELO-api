@@ -12,7 +12,7 @@ import java.util.List;
 
 @Component
 @AllArgsConstructor
-public class EnderecoMapper {
+public final class EnderecoMapper {
 
     public static Endereco toEntity(EnderecoCreateDTO dto) {
         Endereco endereco = new Endereco();

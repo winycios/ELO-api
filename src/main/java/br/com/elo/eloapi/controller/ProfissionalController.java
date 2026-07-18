@@ -1,5 +1,7 @@
 package br.com.elo.eloapi.controller;
 
+import br.com.elo.eloapi.model.profissional.dto.ProfissionalRS;
+import br.com.elo.eloapi.model.profissional.dto.ProfissionalUpdateDTO;
 import br.com.elo.eloapi.model.servico.dto.ServicoCreateDTO;
 import br.com.elo.eloapi.model.servico.dto.ServicoListaRS;
 import br.com.elo.eloapi.model.servico.dto.ServicoRS;
@@ -38,6 +40,23 @@ public class ProfissionalController {
     @DeleteMapping("/servico/{id}")
     public ResponseEntity<Void> desativarServico(@AuthenticationPrincipal Usuario usuario, @PathVariable Long id) {
         profissionalService.desativarServico(usuario, id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/perfil")
+    public ResponseEntity<ProfissionalRS> salvarProfissional(@AuthenticationPrincipal Usuario usuario, @RequestBody @Valid ProfissionalUpdateDTO profissionalUpdateDTO) {
+        return ResponseEntity.ok(profissionalService.salvarProfissional(usuario, profissionalUpdateDTO));
+    }
+
+    @GetMapping("/perfil")
+    public ResponseEntity<ProfissionalRS> buscarProfissional(@AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok(profissionalService.buscarProfissionalSessao(usuario));
+    }
+
+    @PatchMapping("/disponivel/{isAtivar}")
+    public ResponseEntity<Void> DisponibilizaProfissional(
+            @AuthenticationPrincipal Usuario usuario, @PathVariable Boolean isAtivar) {
+        profissionalService.disponibilizaProfissionalServico(usuario, isAtivar);
         return ResponseEntity.noContent().build();
     }
 }

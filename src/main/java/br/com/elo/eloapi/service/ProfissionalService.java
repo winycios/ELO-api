@@ -1,8 +1,13 @@
 package br.com.elo.eloapi.service;
 
 import br.com.elo.eloapi.exception.ResourceNotFound;
+import br.com.elo.eloapi.model.areaAtendimento.AreaAtendimento;
+import br.com.elo.eloapi.model.areaAtendimento.mapper.AreaAtendimentoMapper;
 import br.com.elo.eloapi.model.categoria.CategoriaEspecifica;
 import br.com.elo.eloapi.model.profissional.Profissional;
+import br.com.elo.eloapi.model.profissional.dto.ProfissionalRS;
+import br.com.elo.eloapi.model.profissional.dto.ProfissionalUpdateDTO;
+import br.com.elo.eloapi.model.profissional.mapper.ProfissionalMapper;
 import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
 import br.com.elo.eloapi.model.servico.ServicoImagem;
@@ -26,6 +31,7 @@ public class ProfissionalService {
     private final ServicoDisponibilidadeRepository servicoDisponibilidadeRepository;
     private final ServicoRepository servicoRepository;
     private final ServicoImagemRepository servicoImagemRepository;
+    private final AreaAtendimentoRepository areaAtendimentoRepository;
     private final RedisStore redisStore;
 
 
@@ -77,6 +83,22 @@ public class ProfissionalService {
         buscarServicosESalvarNoCache(profissional.getId());
     }
 
+    @Transactional
+    public ProfissionalRS salvarProfissional(Usuario usuario, ProfissionalUpdateDTO profissionalUpdateDTO) {
+        Profissional profissional = buscarProfissional(usuario);
+        ProfissionalMapper.toUpdateEntity(profissional, profissionalUpdateDTO);
+        Profissional profAtualizado = profissionalRepository.save(profissional);
+
+        AreaAtendimento areaAtendimento = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissional.getId())
+                .orElseGet(() -> {
+                    AreaAtendimento novaArea = new AreaAtendimento();
+                    novaArea.setProfissional(profissional);
+                    return novaArea;
+                });
+        AreaAtendimentoMapper.toUpdateEntity(areaAtendimento, profissionalUpdateDTO.getAreaAtendimentoUpdateDTO());
+        return ProfissionalMapper.toResponse(profAtualizado, areaAtendimentoRepository.save(areaAtendimento));
+    }
+
     private Profissional buscarProfissional(Usuario usuario) {
         return profissionalRepository.findById(usuario.getId())
                 .orElseThrow(() -> new ResourceNotFound("Profissional não encontrado"));
@@ -117,5 +139,17 @@ public class ProfissionalService {
         redisStore.save(String.format(RedisStore.KEY_PROF_SERVICES, id), servicoListaRS, RedisStore.CACHE_DURATION);
 
         return servicoListaRS;
+    }
+
+    @Transactional
+    public void disponibilizaProfissionalServico(Usuario usuario, Boolean isAtivar) {
+        Profissional profissional = buscarProfissional(usuario);
+        profissional.setStDisponivel(isAtivar);
+        profissionalRepository.save(profissional);
+    }
+
+    public ProfissionalRS buscarProfissionalSessao(Usuario usuario) {
+        Profissional profissional = buscarProfissional(usuario);
+        return ProfissionalMapper.toResponse(profissional, areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissional.getId()).orElse(null));
     }
 }
