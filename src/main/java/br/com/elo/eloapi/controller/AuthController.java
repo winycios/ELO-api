@@ -2,6 +2,7 @@ package br.com.elo.eloapi.controller;
 
 import br.com.elo.eloapi.model.usuario.dto.LoginDTO;
 import br.com.elo.eloapi.model.usuario.dto.LoginResponseDTO;
+import br.com.elo.eloapi.model.usuario.dto.RefreshTokenDTO;
 import br.com.elo.eloapi.model.usuario.dto.UsuarioCreateDTO;
 import br.com.elo.eloapi.service.AuthService;
 import jakarta.validation.Valid;
@@ -20,8 +21,8 @@ public class AuthController {
     private final AuthService authenticationService;
 
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponseDTO> refreshToken(String refreshToken) {
-        return ResponseEntity.ok(authenticationService.refresh(refreshToken));
+    public ResponseEntity<LoginResponseDTO> refreshToken(@RequestBody RefreshTokenDTO refreshToken) {
+        return ResponseEntity.ok(authenticationService.refresh(refreshToken.getRefreshToken()));
     }
 
 

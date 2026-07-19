@@ -31,7 +31,7 @@ public class CustomExceptionHandler {
                 .map(error -> String.format("%s - %s", error.getField(), error.getDefaultMessage()))
                 .collect(Collectors.joining("\n"));
 
-        HttpStatus status = HttpStatus.UNAUTHORIZED;
+        HttpStatus status = HttpStatus.BAD_REQUEST;
         ModelError err = new ModelError(Instant.now(), status.value(), "Erro de validação", errorResponse, request.getRequestURI());
         return ResponseEntity.status(status).body(err);
     }

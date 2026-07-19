@@ -30,7 +30,6 @@ public class EnderecoCreateDTO {
     @NotNull
     private Integer nrRua;
 
-    @NotBlank
     private String complemento;
 
     @NotBlank
