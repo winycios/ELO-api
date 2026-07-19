@@ -15,8 +15,14 @@ public interface ServicoRepository extends JpaRepository<Servico, Long> {
     @EntityGraph(attributePaths = {"categoriaEspecifica", "categoriaEspecifica.categoriaGeral"})
     List<Servico> findAllByProfissionalIdAndStAtivoTrue(Long profissionalId);
 
+    @EntityGraph(attributePaths = {"categoriaEspecifica", "categoriaEspecifica.categoriaGeral"})
+    List<Servico> findAllByProfissionalIdAndStAtivoTrueAndCategoriaEspecificaCategoriaGeralId(Long profissionalId, Long categoriaId);
+
     @EntityGraph(attributePaths = {"profissional", "categoriaEspecifica", "categoriaEspecifica.categoriaGeral"})
     List<Servico> findAllByProfissionalIdInAndStAtivoTrue(Collection<Long> profissionalIds);
 
     Optional<Servico> findByIdAndProfissionalIdAndStAtivoTrue(Long id, Long profissionalId);
+
+    @EntityGraph(attributePaths = {"categoriaEspecifica", "categoriaEspecifica.categoriaGeral"})
+    Optional<Servico> findByIdAndStAtivoTrue(Long id);
 }

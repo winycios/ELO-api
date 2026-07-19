@@ -2,22 +2,27 @@ package br.com.elo.eloapi.repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class RedisStore {
 
     public static final String KEY_TEMPLATE_AUTH = "auth:user:%d:refresh-tokens";
     public static final String KEY_CATEGORIES = "categories:all";
     public static final String KEY_PROF_SERVICES = "services:profissional:%d";
+    public static final String KEY_PROFESSIONAL_DETAILS = "professional-details:%d:%d";
+    public static final String KEY_PROFESSIONAL_DETAILS_PATTERN = "professional-details:%d:*";
 
     public static final Duration CACHE_DURATION = Duration.ofDays(1);
 
@@ -58,6 +63,19 @@ public class RedisStore {
             return Optional.of(objectMapper.readValue(json, listType));
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Falha ao desserializar a lista armazenada no Redis.", e);
+        }
+    }
+
+    public void deleteByPattern(String pattern) {
+        List<String> keys = new ArrayList<>();
+        ScanOptions options = ScanOptions.scanOptions().match(pattern).count(100).build();
+
+        try (Cursor<String> cursor = redisTemplate.scan(options)) {
+            cursor.forEachRemaining(keys::add);
+        }
+
+        if (!keys.isEmpty()) {
+            redisTemplate.delete(keys);
         }
     }
 

@@ -13,7 +13,7 @@ import java.util.Optional;
 @Repository
 public interface EnderecoRepository extends JpaRepository<Endereco, Long> {
 
-    Optional<Endereco> findByUsuarioIdAndStPrincipal(Long usuario_id, Boolean stPrincipal);
+    Optional<Endereco> findByUsuarioIdAndStPrincipalTrue(Long usuario_id);
 
     Optional<List<Endereco>> findByUsuarioIdAndStAtivoTrue(Long usuario_id);
 

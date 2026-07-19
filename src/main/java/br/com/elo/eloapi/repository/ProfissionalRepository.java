@@ -16,6 +16,9 @@ public interface ProfissionalRepository extends JpaRepository<Profissional, Long
     Optional<Profissional> findByUsuarioEmail(String email);
 
     @EntityGraph(attributePaths = {"usuario"})
+    Optional<Profissional> findByIdAndStHabilitadoTrue(Long id);
+
+    @EntityGraph(attributePaths = {"usuario"})
     List<Profissional> findAllByIdIn(Collection<Long> ids);
 
     @Query("select p.id from Profissional p order by p.id")

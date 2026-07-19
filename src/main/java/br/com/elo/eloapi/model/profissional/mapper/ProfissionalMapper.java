@@ -29,7 +29,7 @@ public final class ProfissionalMapper {
         return new ProfissionalRS(
                 profissional.getId(),
                 profissional.getQtServicoConcluido(),
-                profissional.getQtRespostaGeral(),
+                null,
                 profissional.getStDisponivel(),
                 profissional.getDsApresentacao(),
                 profissional.getUriPerfil(),

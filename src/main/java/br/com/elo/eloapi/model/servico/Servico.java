@@ -56,6 +56,12 @@ public class Servico implements Serializable {
     @Column(name = "st_ativo", nullable = false)
     private Boolean stAtivo;
 
+    @Column(name = "qt_reservado")
+    private Integer qtReservado;
+
+    @Column(name = "nr_avaliacao_geral")
+    private Double nrAvaliacaoGeral;
+
     @UpdateTimestamp
     @Column(name = "dt_atualizacao")
     private LocalDateTime dtAtualizacao;

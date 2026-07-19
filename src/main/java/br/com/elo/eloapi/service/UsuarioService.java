@@ -13,6 +13,7 @@ import br.com.elo.eloapi.model.usuario.dto.UsuarioEditDTO;
 import br.com.elo.eloapi.model.usuario.dto.UsuarioRS;
 import br.com.elo.eloapi.model.usuario.mapper.UsuarioMapper;
 import br.com.elo.eloapi.repository.EnderecoRepository;
+import br.com.elo.eloapi.repository.RedisStore;
 import br.com.elo.eloapi.repository.UsuarioRepository;
 import br.com.elo.eloapi.service.search.SearchOutboxService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class UsuarioService {
     private final EnderecoRepository enderecoRepository;
     private final AwesomeApiCepClient awesomeApiCepClient;
     private final SearchOutboxService searchOutboxService;
+    private final RedisStore redisStore;
 
     @Transactional
     public UsuarioRS editarPerfil(Usuario usuarioAutenticado, UsuarioEditDTO usuarioEditDTO) {
@@ -42,6 +44,7 @@ public class UsuarioService {
         usuario.setTelWhats(usuarioEditDTO.getTelContatoZap());
 
         usuario = usuarioRepository.save(usuario);
+        invalidarCacheDetalhes(usuario.getId());
         searchOutboxService.solicitarReindexacao(usuario.getId());
         return UsuarioMapper.toResponse(usuario);
     }
@@ -69,7 +72,7 @@ public class UsuarioService {
     }
 
     public Optional<Endereco> buscarPrincipal(Usuario usuario) {
-        return enderecoRepository.findByUsuarioIdAndStPrincipal(usuario.getId(), true);
+        return enderecoRepository.findByUsuarioIdAndStPrincipalTrue(usuario.getId());
     }
 
     public Optional<List<Endereco>> buscarEnderecoAtivos(Usuario usuario) {
@@ -93,5 +96,13 @@ public class UsuarioService {
         Endereco endereco = enderecoRepository.findByIdAndUsuarioIdAndStAtivoTrue(enderecoId, usuario.getId()).orElseThrow(() -> new ResourceNotFound("Endereço ativo não encontrado para este usuário"));
         endereco.setStAtivo(false);
         enderecoRepository.save(endereco);
+    }
+
+    private void invalidarCacheDetalhes(Long profissionalId) {
+        try {
+            redisStore.deleteByPattern(String.format(RedisStore.KEY_PROFESSIONAL_DETAILS_PATTERN, profissionalId));
+        } catch (RuntimeException ignored) {
+            // A alteração no MySQL não deve falhar caso o Redis esteja indisponível.
+        }
     }
 }

@@ -61,6 +61,7 @@ public class ProfissionalService {
         List<ServicoDisponibilidade> disponibilidades = salvarDisponibilidades(servico, dto.getServicoDisponibilidadeCreateDTOList());
 
         buscarServicosESalvarNoCache(profissional.getId());
+        invalidarCacheDetalhes(profissional.getId());
         searchOutboxService.solicitarReindexacao(profissional.getId());
         return ServicoMapper.toResponse(servico, imagens, disponibilidades);
     }
@@ -84,6 +85,7 @@ public class ProfissionalService {
         servico.setStAtivo(false);
         servicoRepository.save(servico);
         buscarServicosESalvarNoCache(profissional.getId());
+        invalidarCacheDetalhes(profissional.getId());
         searchOutboxService.solicitarReindexacao(profissional.getId());
     }
 
@@ -101,11 +103,12 @@ public class ProfissionalService {
         });
         AreaAtendimentoMapper.toUpdateEntity(areaAtendimento, profissionalUpdateDTO.getAreaAtendimentoUpdateDTO());
         AreaAtendimento areaAtualizada = areaAtendimentoRepository.save(areaAtendimento);
+        invalidarCacheDetalhes(profissional.getId());
         searchOutboxService.solicitarReindexacao(profissional.getId());
         return ProfissionalMapper.toResponse(profAtualizado, areaAtualizada);
     }
 
-    private Profissional buscarProfissional(Usuario usuario) {
+    public Profissional buscarProfissional(Usuario usuario) {
         return profissionalRepository.findById(usuario.getId())
                 .orElseThrow(() -> new ResourceNotFound("Profissional não encontrado"));
     }
@@ -145,6 +148,14 @@ public class ProfissionalService {
         redisStore.save(String.format(RedisStore.KEY_PROF_SERVICES, id), servicoListaRS, RedisStore.CACHE_DURATION);
 
         return servicoListaRS;
+    }
+
+    private void invalidarCacheDetalhes(Long profissionalId) {
+        try {
+            redisStore.deleteByPattern(String.format(RedisStore.KEY_PROFESSIONAL_DETAILS_PATTERN, profissionalId));
+        } catch (RuntimeException ignored) {
+            // A alteração no MySQL não deve falhar caso o Redis esteja indisponível.
+        }
     }
 
     @Transactional
