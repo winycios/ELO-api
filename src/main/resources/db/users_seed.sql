@@ -16,10 +16,10 @@ VALUES (3, 'ambos', 'alves', 'ambos@gmail.com', '$2a$10$JEBTt/uw2676R09VkAoBjuMd
 -- segundo os profissionais
 INSERT INTO database_elo.profissional (usuario_id, dt_criacao, qt_resposta_geral, st_disponivel, ds_apresentacao,
                                        uri_perfil, ds_especialidades, st_habilitado)
-VALUES (1, '2026-07-14 22:19:51', null, null, null, null, null, 1);
+VALUES (1, '2026-07-14 22:19:51', null, false, null, null, null, 1);
 INSERT INTO database_elo.profissional (usuario_id, dt_criacao, qt_resposta_geral, st_disponivel, ds_apresentacao,
                                        uri_perfil, ds_especialidades, st_habilitado)
 VALUES (2, '2026-07-14 22:20:06', null, null, null, null, null, 0);
 INSERT INTO database_elo.profissional (usuario_id, dt_criacao, qt_resposta_geral, st_disponivel, ds_apresentacao,
                                        uri_perfil, ds_especialidades, st_habilitado)
-VALUES (3, '2026-07-14 22:20:20', null, null, null, null, null, 1);
+VALUES (3, '2026-07-14 22:20:20', null, false, null, null, null, 1);

@@ -1,7 +1,3 @@
--- Carga manual para desenvolvimento da Vitrine.
--- Pre-requisitos: profissionais/usuarios 1, 2 e 3 e ao menos uma categoria especifica.
--- Execute uma unica vez no schema database_elo.
-
 USE `database_elo`;
 
 DELIMITER $$
@@ -28,15 +24,18 @@ BEGIN
             SET MESSAGE_TEXT = 'Cadastre ao menos uma categoria especifica antes de executar o seed.';
     END IF;
 
-    IF (SELECT COUNT(*) FROM profissional WHERE usuario_id IN (1, 2, 3)) <> 3 THEN
+    IF (SELECT COUNT(*) FROM profissional WHERE usuario_id IN (1, 3)) <> 2 THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Os profissionais 1, 2 e 3 precisam existir antes de executar o seed.';
+            SET MESSAGE_TEXT = 'Os profissionais 1 e 3 precisam existir antes de executar o seed.';
     END IF;
 
     START TRANSACTION;
 
     WHILE v_numero <= 40 DO
-        SET v_profissional_id = ((v_numero - 1) MOD 3) + 1;
+        SET v_profissional_id = CASE
+            WHEN v_numero MOD 2 = 1 THEN 1
+            ELSE 3
+        END;
         SET v_categoria_offset = (v_numero - 1) MOD v_total_categorias;
 
         SELECT id_categoria_especifica
@@ -119,6 +118,7 @@ SELECT p.id_publicacao,
        COUNT(i.id_publicacao_Imagem) AS quantidade_imagens
   FROM publicacao p
   JOIN publicacao_imagem i ON i.fk_publicacao_id = p.id_publicacao
+ WHERE p.fk_profissional_usuario_id IN (1, 3)
  GROUP BY p.id_publicacao,
           p.fk_profissional_usuario_id,
           p.fk_categoria_Especifica_id,

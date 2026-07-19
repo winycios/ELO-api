@@ -52,7 +52,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`profissional`
 (
     `usuario_id`            INT          NOT NULL,
     `dt_criacao`            DATETIME     NULL DEFAULT NULL,
-    `qt_resposta_geral`     INT          NULL DEFAULT NULL,
     `st_disponivel`         TINYINT      NULL DEFAULT '0',
     `ds_apresentacao`       VARCHAR(200) NULL DEFAULT NULL,
     `uri_perfil`            VARCHAR(200) NULL DEFAULT NULL,
@@ -165,6 +164,8 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`servico`
     `st_ativo`                   TINYINT(1)                    NULL DEFAULT NULL,
     `nr_tempo_experiencia`       INT                           NULL DEFAULT NULL,
     `dt_atualizacao`             DATETIME                      NULL DEFAULT NULL,
+    `qt_reservado`               INT                           NULL DEFAULT NULL,
+    `nr_avaliacao_geral`         DOUBLE                        NULL DEFAULT NULL,
     PRIMARY KEY (`id_servico`),
     CONSTRAINT `fk_Servico_Categoria_Especifica1`
     FOREIGN KEY (`fk_id_categoria_especifica`)
@@ -222,34 +223,34 @@ CREATE INDEX `fk_Reserva_Reserva_Status1_idx` ON `database_elo`.`reserva` (`fk_r
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `database_elo`.`avaliacao_reserva`
 (
-    `idAvaliacao_Reserva`     INT          NOT NULL AUTO_INCREMENT,
-    `fk_reserva_id`           INT          NOT NULL,
-    `fk_avaliador_usuario_id` INT          NOT NULL,
-    `fk_usuario_avaliado_id`  INT          NOT NULL,
+    `id_avaliacao_reserva`    INT          NOT NULL AUTO_INCREMENT,
+    `fk_id_reserva`           INT          NOT NULL,
+    `fk_id_avaliador_usuario` INT          NOT NULL,
+    `fk_id_usuario_avaliado`  INT          NOT NULL,
     `qt_nota`                 TINYINT      NULL DEFAULT NULL,
     `ds_comentario`           VARCHAR(200) NULL DEFAULT NULL,
     `observacao_profisional`  VARCHAR(200) NULL DEFAULT NULL,
     `distancia`               DOUBLE       NULL DEFAULT NULL,
     `ds_endereco`             VARCHAR(45)  NULL DEFAULT NULL,
-    PRIMARY KEY (`idAvaliacao_Reserva`),
+    PRIMARY KEY (`id_avaliacao_reserva`),
     CONSTRAINT `fk_Avaliacao_Reserva_Reserva1`
-    FOREIGN KEY (`fk_reserva_id`)
+    FOREIGN KEY (`fk_id_reserva`)
     REFERENCES `database_elo`.`reserva` (`id_reserva`),
     CONSTRAINT `fk_Avaliacao_Reserva_Usuario1`
-    FOREIGN KEY (`fk_avaliador_usuario_id`)
+    FOREIGN KEY (`fk_id_avaliador_usuario`)
     REFERENCES `database_elo`.`usuario` (`id_usuario`),
     CONSTRAINT `fk_Avaliacao_Reserva_Usuario2`
-    FOREIGN KEY (`fk_usuario_avaliado_id`)
+    FOREIGN KEY (`fk_id_usuario_avaliado`)
     REFERENCES `database_elo`.`usuario` (`id_usuario`)
     )
     ENGINE = InnoDB
     DEFAULT CHARACTER SET = utf8mb3;
 
-CREATE INDEX `fk_Avaliacao_Reserva_Reserva1_idx` ON `database_elo`.`avaliacao_reserva` (`fk_reserva_id` ASC) VISIBLE;
+CREATE INDEX `fk_Avaliacao_Reserva_Reserva1_idx` ON `database_elo`.`avaliacao_reserva` (`fk_id_reserva` ASC) VISIBLE;
 
-CREATE INDEX `fk_Avaliacao_Reserva_Usuario1_idx` ON `database_elo`.`avaliacao_reserva` (`fk_avaliador_usuario_id` ASC) VISIBLE;
+CREATE INDEX `fk_Avaliacao_Reserva_Usuario1_idx` ON `database_elo`.`avaliacao_reserva` (`fk_id_avaliador_usuario` ASC) VISIBLE;
 
-CREATE INDEX `fk_Avaliacao_Reserva_Usuario2_idx` ON `database_elo`.`avaliacao_reserva` (`fk_usuario_avaliado_id` ASC) VISIBLE;
+CREATE INDEX `fk_Avaliacao_Reserva_Usuario2_idx` ON `database_elo`.`avaliacao_reserva` (`fk_id_usuario_avaliado` ASC) VISIBLE;
 
 
 -- -----------------------------------------------------
@@ -439,6 +440,30 @@ CREATE INDEX `fk_Reserva_endereco_Reserva1_idx` ON `database_elo`.`reserva_ender
 
 
 -- -----------------------------------------------------
+-- Table `database_elo`.`search_outbox`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `database_elo`.`search_outbox`
+(
+    `id_search_outbox`   BIGINT      NOT NULL AUTO_INCREMENT,
+    `fk_profissional_id` INT         NOT NULL,
+    `dt_criacao`         DATETIME(3) NOT NULL,
+    `dt_processamento`   DATETIME(3) NULL     DEFAULT NULL,
+    `nr_tentativas`      INT         NOT NULL DEFAULT '0',
+    PRIMARY KEY (`id_search_outbox`),
+    CONSTRAINT `fk_Search_Outbox_Profissional`
+    FOREIGN KEY (`fk_profissional_id`)
+    REFERENCES `database_elo`.`profissional` (`usuario_id`)
+    )
+    ENGINE = InnoDB
+    AUTO_INCREMENT = 10
+    DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE INDEX `fk_Search_Outbox_Profissional` ON `database_elo`.`search_outbox` (`fk_profissional_id` ASC) VISIBLE;
+
+CREATE INDEX `idx_search_outbox_pendente` ON `database_elo`.`search_outbox` (`dt_processamento` ASC, `nr_tentativas` ASC, `id_search_outbox` ASC) VISIBLE;
+
+
+-- -----------------------------------------------------
 -- Table `database_elo`.`servico_disponibilidade`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `database_elo`.`servico_disponibilidade`
@@ -480,28 +505,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`servico_imagem`
 
 CREATE INDEX `fk_Servico_Imagem_Servico_idx` ON `database_elo`.`servico_imagem` (`fk_id_servico` ASC) VISIBLE;
 
-
--- -----------------------------------------------------
--- Table `database_elo`.`search_outbox`
--- Eventos transacionais usados para sincronizar profissionais com o Elasticsearch.
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `database_elo`.`search_outbox`
-(
-    `id_search_outbox`  BIGINT      NOT NULL AUTO_INCREMENT,
-    `fk_profissional_id` INT         NOT NULL,
-    `dt_criacao`         DATETIME(3) NOT NULL,
-    `dt_processamento`   DATETIME(3) NULL DEFAULT NULL,
-    `nr_tentativas`      INT         NOT NULL DEFAULT 0,
-    PRIMARY KEY (`id_search_outbox`),
-    CONSTRAINT `fk_Search_Outbox_Profissional`
-        FOREIGN KEY (`fk_profissional_id`)
-        REFERENCES `database_elo`.`profissional` (`usuario_id`)
-    )
-    ENGINE = InnoDB
-    DEFAULT CHARACTER SET = utf8mb3;
-
-CREATE INDEX `idx_search_outbox_pendente`
-    ON `database_elo`.`search_outbox` (`dt_processamento`, `nr_tentativas`, `id_search_outbox`);
 
 SET SQL_MODE = @OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
