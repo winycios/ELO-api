@@ -61,7 +61,7 @@ public class VitrineService {
         Map<Long, Long> comentarios = comentarioRepository.contarAtivosPorPublicacoes(ids).stream().collect(Collectors.toMap(PublicacaoComentarioRepository.Contagem::getPublicacaoId, PublicacaoComentarioRepository.Contagem::getTotal));
 
         List<PublicacaoFeedRS> items = pagina.stream().map(publicacao -> PublicacaoMapper.toFeedResponse(publicacao, imagens, curtidas, comentarios)).toList();
-        Publicacao ultimo = pagina.getLast();
+        Publicacao ultimo = pagina.get(pagina.size() - 1);
         String nextCursor = hasNext ? cursorCodec.encode(ultimo.getDtPublicacao(), ultimo.getId()) : null;
         return new CursorPageRS<>(items, nextCursor, hasNext);
     }

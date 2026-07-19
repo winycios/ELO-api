@@ -8,7 +8,6 @@ import br.com.elo.eloapi.repository.RedisStore;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

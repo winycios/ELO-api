@@ -1,7 +1,6 @@
 package br.com.elo.eloapi.model.categoria;
 
 
-import br.com.elo.eloapi.model.profissional.Profissional;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

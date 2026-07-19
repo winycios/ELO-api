@@ -1,9 +1,6 @@
 package br.com.elo.eloapi.exception.handler;
 
-import br.com.elo.eloapi.exception.BadRequestException;
-import br.com.elo.eloapi.exception.ConflictException;
-import br.com.elo.eloapi.exception.ResourceNotFound;
-import br.com.elo.eloapi.exception.UnauthorizedException;
+import br.com.elo.eloapi.exception.*;
 import br.com.elo.eloapi.model.erro.ModelError;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -88,6 +85,15 @@ public class CustomExceptionHandler {
         HttpStatus status = HttpStatus.BAD_REQUEST;
         ModelError err = new ModelError(Instant.now(), status.value(), status.toString(), e.getMessage(),
                 request.getRequestURI());
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(SearchUnavailableException.class)
+    public ResponseEntity<ModelError> exceptionPersonalized(SearchUnavailableException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        ModelError err = new ModelError(Instant.now(), status.value(), status.toString(), e.getMessage(),
+                request.getRequestURI());
+        logger.warn("Servico de busca indisponivel em {}", request.getRequestURI(), e);
         return ResponseEntity.status(status).body(err);
     }
 

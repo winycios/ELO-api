@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -70,6 +69,10 @@ public class Usuario implements UserDetails, Serializable {
     @CreationTimestamp
     @Column(updatable = false, name = "dt_criacao")
     private LocalDateTime dtCriacao;
+
+    @UpdateTimestamp
+    @Column(name = "dt_atualizacao")
+    private LocalDateTime dtAtualizacao;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

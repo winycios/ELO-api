@@ -1,20 +1,14 @@
 package br.com.elo.eloapi.model.profissional;
 
 import br.com.elo.eloapi.model.usuario.Usuario;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -43,6 +37,10 @@ public class Profissional implements Serializable {
     @CreationTimestamp
     @Column(name = "dt_criacao", updatable = false)
     private LocalDateTime dtCriacao;
+
+    @UpdateTimestamp
+    @Column(name = "dt_atualizacao")
+    private LocalDateTime dtAtualizacao;
 
     @Column(name = "qt_resposta_geral")
     private Integer qtRespostaGeral;

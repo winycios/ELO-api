@@ -1,6 +1,5 @@
 package br.com.elo.eloapi.controller;
 
-import br.com.elo.eloapi.model.categoria.CategoriaEspecifica;
 import br.com.elo.eloapi.model.categoria.dto.CategoriaRS;
 import br.com.elo.eloapi.service.CategoriaService;
 import lombok.RequiredArgsConstructor;

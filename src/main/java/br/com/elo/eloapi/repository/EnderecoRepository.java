@@ -1,8 +1,8 @@
 package br.com.elo.eloapi.repository;
 
 import br.com.elo.eloapi.model.endereco.Endereco;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;

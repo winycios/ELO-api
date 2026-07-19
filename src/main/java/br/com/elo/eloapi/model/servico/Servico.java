@@ -8,9 +8,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -53,5 +55,9 @@ public class Servico implements Serializable {
 
     @Column(name = "st_ativo", nullable = false)
     private Boolean stAtivo;
+
+    @UpdateTimestamp
+    @Column(name = "dt_atualizacao")
+    private LocalDateTime dtAtualizacao;
 
 }

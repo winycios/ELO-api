@@ -14,6 +14,7 @@ import br.com.elo.eloapi.model.usuario.dto.UsuarioRS;
 import br.com.elo.eloapi.model.usuario.mapper.UsuarioMapper;
 import br.com.elo.eloapi.repository.EnderecoRepository;
 import br.com.elo.eloapi.repository.UsuarioRepository;
+import br.com.elo.eloapi.service.search.SearchOutboxService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,7 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final EnderecoRepository enderecoRepository;
     private final AwesomeApiCepClient awesomeApiCepClient;
+    private final SearchOutboxService searchOutboxService;
 
     @Transactional
     public UsuarioRS editarPerfil(Usuario usuarioAutenticado, UsuarioEditDTO usuarioEditDTO) {
@@ -40,6 +42,7 @@ public class UsuarioService {
         usuario.setTelWhats(usuarioEditDTO.getTelContatoZap());
 
         usuario = usuarioRepository.save(usuario);
+        searchOutboxService.solicitarReindexacao(usuario.getId());
         return UsuarioMapper.toResponse(usuario);
     }
 

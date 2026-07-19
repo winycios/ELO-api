@@ -16,6 +16,7 @@ import br.com.elo.eloapi.model.servico.dto.*;
 import br.com.elo.eloapi.model.servico.mapper.ServicoMapper;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.repository.*;
+import br.com.elo.eloapi.service.search.SearchOutboxService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ public class ProfissionalService {
     private final ServicoImagemRepository servicoImagemRepository;
     private final AreaAtendimentoRepository areaAtendimentoRepository;
     private final RedisStore redisStore;
+    private final SearchOutboxService searchOutboxService;
 
 
     @Transactional
@@ -59,6 +61,7 @@ public class ProfissionalService {
         List<ServicoDisponibilidade> disponibilidades = salvarDisponibilidades(servico, dto.getServicoDisponibilidadeCreateDTOList());
 
         buscarServicosESalvarNoCache(profissional.getId());
+        searchOutboxService.solicitarReindexacao(profissional.getId());
         return ServicoMapper.toResponse(servico, imagens, disponibilidades);
     }
 
@@ -81,6 +84,7 @@ public class ProfissionalService {
         servico.setStAtivo(false);
         servicoRepository.save(servico);
         buscarServicosESalvarNoCache(profissional.getId());
+        searchOutboxService.solicitarReindexacao(profissional.getId());
     }
 
     @Transactional
@@ -94,9 +98,11 @@ public class ProfissionalService {
                     AreaAtendimento novaArea = new AreaAtendimento();
                     novaArea.setProfissional(profissional);
                     return novaArea;
-                });
+        });
         AreaAtendimentoMapper.toUpdateEntity(areaAtendimento, profissionalUpdateDTO.getAreaAtendimentoUpdateDTO());
-        return ProfissionalMapper.toResponse(profAtualizado, areaAtendimentoRepository.save(areaAtendimento));
+        AreaAtendimento areaAtualizada = areaAtendimentoRepository.save(areaAtendimento);
+        searchOutboxService.solicitarReindexacao(profissional.getId());
+        return ProfissionalMapper.toResponse(profAtualizado, areaAtualizada);
     }
 
     private Profissional buscarProfissional(Usuario usuario) {
@@ -146,6 +152,7 @@ public class ProfissionalService {
         Profissional profissional = buscarProfissional(usuario);
         profissional.setStDisponivel(isAtivar);
         profissionalRepository.save(profissional);
+        searchOutboxService.solicitarReindexacao(profissional.getId());
     }
 
     public ProfissionalRS buscarProfissionalSessao(Usuario usuario) {

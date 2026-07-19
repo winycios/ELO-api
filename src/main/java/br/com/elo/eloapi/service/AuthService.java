@@ -14,11 +14,13 @@ import br.com.elo.eloapi.model.usuario.mapper.UsuarioMapper;
 import br.com.elo.eloapi.repository.ProfissionalRepository;
 import br.com.elo.eloapi.repository.RedisStore;
 import br.com.elo.eloapi.repository.UsuarioRepository;
+import br.com.elo.eloapi.service.search.SearchOutboxService;
 import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -35,6 +37,7 @@ public class AuthService {
     private final UsuarioMapper usuarioMapper;
     private final JwtService jwtService;
     private final RedisStore redisStore;
+    private final SearchOutboxService searchOutboxService;
 
     @Value("${security.jwt.access-token.expiration}")
     private long accessTokenExpiration;
@@ -43,15 +46,19 @@ public class AuthService {
     private long refreshTokenExpiration;
 
 
-    public AuthService(UsuarioRepository usuarioRepository, ProfissionalRepository profissionalRepository, AuthenticationManager authenticationManager, UsuarioMapper usuarioMapper, JwtService jwtService, RedisStore redisStore) {
+    public AuthService(UsuarioRepository usuarioRepository, ProfissionalRepository profissionalRepository,
+                       AuthenticationManager authenticationManager, UsuarioMapper usuarioMapper,
+                       JwtService jwtService, RedisStore redisStore, SearchOutboxService searchOutboxService) {
         this.usuarioRepository = usuarioRepository;
         this.profissionalRepository = profissionalRepository;
         this.authenticationManager = authenticationManager;
         this.usuarioMapper = usuarioMapper;
         this.jwtService = jwtService;
         this.redisStore = redisStore;
+        this.searchOutboxService = searchOutboxService;
     }
 
+    @Transactional
     public void createUser(UsuarioCreateDTO usuarioCreateDto) {
         if (usuarioRepository.findByEmail(usuarioCreateDto.getEmail()).isPresent()) {
             throw new ConflictException("Email já cadastrado!");
@@ -59,7 +66,8 @@ public class AuthService {
 
         Usuario usuario = usuarioMapper.toEntity(usuarioCreateDto);
         usuario = usuarioRepository.save(usuario);
-        profissionalRepository.save(new Profissional(usuario, !usuarioCreateDto.getCadastroAcao().isCadastrarUsuario()));
+        Profissional profissional = profissionalRepository.save(new Profissional(usuario, !usuarioCreateDto.getCadastroAcao().isCadastrarUsuario()));
+        searchOutboxService.solicitarReindexacao(profissional.getId());
     }
 
     public LoginResponseDTO authenticate(LoginDTO loginDto) {

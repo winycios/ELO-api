@@ -1,7 +1,7 @@
 package br.com.elo.eloapi.config;
 
-import br.com.elo.eloapi.service.JwtService;
 import br.com.elo.eloapi.exception.UnauthorizedException;
+import br.com.elo.eloapi.service.JwtService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;

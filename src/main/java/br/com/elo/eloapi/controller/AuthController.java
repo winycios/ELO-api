@@ -6,10 +6,11 @@ import br.com.elo.eloapi.model.usuario.dto.UsuarioCreateDTO;
 import br.com.elo.eloapi.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-
-import lombok.Getter;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auth")

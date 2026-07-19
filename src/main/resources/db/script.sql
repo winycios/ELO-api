@@ -34,13 +34,15 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`usuario`
     `qt_avaliacoes`      INT           NULL DEFAULT '0',
     `uri_perfil`         VARCHAR(255)  NULL DEFAULT NULL,
     `st_habilitado`      TINYINT(1)    NOT NULL,
+    `dt_atualizacao`     DATETIME      NULL DEFAULT NULL,
     PRIMARY KEY (`id_usuario`)
     )
     ENGINE = InnoDB
-    AUTO_INCREMENT = 4
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE UNIQUE INDEX `ds_email_UNIQUE` ON `database_elo`.`usuario` (`ds_email` ASC) VISIBLE;
+
+CREATE INDEX `idx_usuario_atualizacao` ON `database_elo`.`usuario` (`dt_atualizacao` ASC) VISIBLE;
 
 
 -- -----------------------------------------------------
@@ -48,14 +50,16 @@ CREATE UNIQUE INDEX `ds_email_UNIQUE` ON `database_elo`.`usuario` (`ds_email` AS
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `database_elo`.`profissional`
 (
-    `usuario_id`        INT          NOT NULL,
-    `dt_criacao`        DATETIME     NULL DEFAULT NULL,
-    `qt_resposta_geral` INT          NULL DEFAULT NULL,
-    `st_disponivel`     TINYINT      NULL DEFAULT NULL,
-    `ds_apresentacao`   VARCHAR(200) NULL DEFAULT NULL,
-    `uri_perfil`        VARCHAR(200) NULL DEFAULT NULL,
-    `ds_especialidades` VARCHAR(200) NULL DEFAULT NULL,
-    `st_habilitado`     TINYINT(1)   NOT NULL,
+    `usuario_id`            INT          NOT NULL,
+    `dt_criacao`            DATETIME     NULL DEFAULT NULL,
+    `qt_resposta_geral`     INT          NULL DEFAULT NULL,
+    `st_disponivel`         TINYINT      NULL DEFAULT '0',
+    `ds_apresentacao`       VARCHAR(200) NULL DEFAULT NULL,
+    `uri_perfil`            VARCHAR(200) NULL DEFAULT NULL,
+    `st_habilitado`         TINYINT(1)   NOT NULL,
+    `qt_servicos_concluido` INT          NULL DEFAULT NULL,
+    `ds_especialidades`     VARCHAR(255) NULL DEFAULT NULL,
+    `dt_atualizacao`        DATETIME     NULL DEFAULT NULL,
     PRIMARY KEY (`usuario_id`),
     CONSTRAINT `fk_Profissional_Usuario0`
     FOREIGN KEY (`usuario_id`)
@@ -66,30 +70,32 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`profissional`
 
 CREATE INDEX `fk_Profissional_Usuario_idx` ON `database_elo`.`profissional` (`usuario_id` ASC) VISIBLE;
 
+CREATE INDEX `idx_profissional_atualizacao` ON `database_elo`.`profissional` (`dt_atualizacao` ASC) VISIBLE;
+
 
 -- -----------------------------------------------------
 -- Table `database_elo`.`area_atendimento`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `database_elo`.`area_atendimento`
 (
-    `id_area_Atendimento`        INT         NOT NULL AUTO_INCREMENT,
-    `fk_profissional_usuario_id` INT         NOT NULL,
-    `nr_latitude`                DOUBLE      NULL DEFAULT NULL,
-    `nr_longitude`               DOUBLE      NULL DEFAULT NULL,
-    `nr_raio`                    INT         NULL DEFAULT NULL,
-    `nm_cidade`                  VARCHAR(45) NULL DEFAULT NULL,
-    `nm_estado`                  VARCHAR(45) NULL DEFAULT NULL,
-    `nm_bairro`                  VARCHAR(45) NULL DEFAULT NULL,
-    `dt_criacao`                 DATETIME    NULL DEFAULT NULL,
+    `id_area_Atendimento` INT         NOT NULL AUTO_INCREMENT,
+    `fk_id_profissional`  INT         NOT NULL,
+    `nr_latitude`         DOUBLE      NULL DEFAULT NULL,
+    `nr_longitude`        DOUBLE      NULL DEFAULT NULL,
+    `nr_raio`             INT         NULL DEFAULT NULL,
+    `nm_cidade`           VARCHAR(45) NULL DEFAULT NULL,
+    `nm_estado`           VARCHAR(45) NULL DEFAULT NULL,
+    `nm_bairro`           VARCHAR(45) NULL DEFAULT NULL,
+    `dt_criacao`          DATETIME    NULL DEFAULT NULL,
     PRIMARY KEY (`id_area_Atendimento`),
     CONSTRAINT `fk_Area_Atendimento_Profissional1`
-    FOREIGN KEY (`fk_profissional_usuario_id`)
+    FOREIGN KEY (`fk_id_profissional`)
     REFERENCES `database_elo`.`profissional` (`usuario_id`)
     )
     ENGINE = InnoDB
     DEFAULT CHARACTER SET = utf8mb3;
 
-CREATE INDEX `fk_Area_Atendimento_Profissional1_idx` ON `database_elo`.`area_atendimento` (`fk_profissional_usuario_id` ASC) VISIBLE;
+CREATE INDEX `fk_Area_Atendimento_Profissional1_idx` ON `database_elo`.`area_atendimento` (`fk_id_profissional` ASC) VISIBLE;
 
 
 -- -----------------------------------------------------
@@ -116,7 +122,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`categoria_geral`
     PRIMARY KEY (`id_categoria_geral`)
     )
     ENGINE = InnoDB
-    AUTO_INCREMENT = 41
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE UNIQUE INDEX `uk_categoria_geral_nome` ON `database_elo`.`categoria_geral` (`nm_categoria` ASC) VISIBLE;
@@ -138,7 +143,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`categoria_especifica`
     REFERENCES `database_elo`.`categoria_geral` (`id_categoria_geral`)
     )
     ENGINE = InnoDB
-    AUTO_INCREMENT = 62
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE UNIQUE INDEX `uk_categoria_especifica` ON `database_elo`.`categoria_especifica` (`fk_id_categoria_geral` ASC, `nm_categoria_especifica` ASC) VISIBLE;
@@ -160,6 +164,7 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`servico`
     `tp_execucao`                ENUM ('presencial', 'remoto') NULL DEFAULT NULL,
     `st_ativo`                   TINYINT(1)                    NULL DEFAULT NULL,
     `nr_tempo_experiencia`       INT                           NULL DEFAULT NULL,
+    `dt_atualizacao`             DATETIME                      NULL DEFAULT NULL,
     PRIMARY KEY (`id_servico`),
     CONSTRAINT `fk_Servico_Categoria_Especifica1`
     FOREIGN KEY (`fk_id_categoria_especifica`)
@@ -169,7 +174,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`servico`
     REFERENCES `database_elo`.`profissional` (`usuario_id`)
     )
     ENGINE = InnoDB
-    AUTO_INCREMENT = 3
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE INDEX `fk_Servico_Profissional_idx` ON `database_elo`.`servico` (`fk_id_profissional_usuario` ASC) VISIBLE;
@@ -275,7 +279,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`endereco_usuario`
     REFERENCES `database_elo`.`usuario` (`id_usuario`)
     )
     ENGINE = InnoDB
-    AUTO_INCREMENT = 3
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE INDEX `fk_Endereco_Usuario1_idx` ON `database_elo`.`endereco_usuario` (`fk_usuario_id` ASC) VISIBLE;
@@ -301,7 +304,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`publicacao`
     REFERENCES `database_elo`.`profissional` (`usuario_id`)
     )
     ENGINE = InnoDB
-    AUTO_INCREMENT = 42
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE INDEX `fk_Publicacao_Profissional1_idx` ON `database_elo`.`publicacao` (`fk_profissional_usuario_id` ASC) VISIBLE;
@@ -339,7 +341,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`publicacao_comentario`
     REFERENCES `database_elo`.`usuario` (`id_usuario`)
     )
     ENGINE = InnoDB
-    AUTO_INCREMENT = 7
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE INDEX `fk_Publicacao_Comentario_Usuario1_idx` ON `database_elo`.`publicacao_comentario` (`fk_usuario_id` ASC) VISIBLE;
@@ -386,7 +387,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`publicacao_imagem`
     REFERENCES `database_elo`.`publicacao` (`id_publicacao`)
     )
     ENGINE = InnoDB
-    AUTO_INCREMENT = 52
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE INDEX `fk_Publicacao_Imagem_Publicacao1_idx` ON `database_elo`.`publicacao_imagem` (`fk_publicacao_id` ASC) VISIBLE;
@@ -456,7 +456,6 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`servico_disponibilidade`
     REFERENCES `database_elo`.`servico` (`id_servico`)
     )
     ENGINE = InnoDB
-    AUTO_INCREMENT = 22
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE INDEX `fk_Servico_Disponibilidade_Servico1_idx` ON `database_elo`.`servico_disponibilidade` (`fk_id_servico` ASC) VISIBLE;
@@ -481,6 +480,28 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`servico_imagem`
 
 CREATE INDEX `fk_Servico_Imagem_Servico_idx` ON `database_elo`.`servico_imagem` (`fk_id_servico` ASC) VISIBLE;
 
+
+-- -----------------------------------------------------
+-- Table `database_elo`.`search_outbox`
+-- Eventos transacionais usados para sincronizar profissionais com o Elasticsearch.
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `database_elo`.`search_outbox`
+(
+    `id_search_outbox`  BIGINT      NOT NULL AUTO_INCREMENT,
+    `fk_profissional_id` INT         NOT NULL,
+    `dt_criacao`         DATETIME(3) NOT NULL,
+    `dt_processamento`   DATETIME(3) NULL DEFAULT NULL,
+    `nr_tentativas`      INT         NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id_search_outbox`),
+    CONSTRAINT `fk_Search_Outbox_Profissional`
+        FOREIGN KEY (`fk_profissional_id`)
+        REFERENCES `database_elo`.`profissional` (`usuario_id`)
+    )
+    ENGINE = InnoDB
+    DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE INDEX `idx_search_outbox_pendente`
+    ON `database_elo`.`search_outbox` (`dt_processamento`, `nr_tentativas`, `id_search_outbox`);
 
 SET SQL_MODE = @OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;

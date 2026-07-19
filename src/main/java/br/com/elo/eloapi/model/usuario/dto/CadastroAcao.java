@@ -1,7 +1,9 @@
 package br.com.elo.eloapi.model.usuario.dto;
 
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @AllArgsConstructor
