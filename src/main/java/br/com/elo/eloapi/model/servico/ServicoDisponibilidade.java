@@ -33,16 +33,16 @@ public class ServicoDisponibilidade implements Serializable {
     @JoinColumn(name = "fk_id_servico", nullable = false)
     private Servico servico;
 
-    @Column(name = "nr_dia_semana")
+    @Column(name = "nr_dia_semana", nullable = false)
     private Integer diaSemana;
 
-    @Column(name = "hr_inicio")
+    @Column(name = "hr_inicio", nullable = false)
     private LocalTime hrInicio;
 
-    @Column(name = "hr_fim")
+    @Column(name = "hr_fim", nullable = false)
     private LocalTime hrFim;
 
-    @Column(name = "st_ativo")
+    @Column(name = "st_ativo", nullable = false)
     private Boolean stAtivo;
 
     @CreationTimestamp

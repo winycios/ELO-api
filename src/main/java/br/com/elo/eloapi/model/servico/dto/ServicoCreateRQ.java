@@ -1,6 +1,8 @@
 package br.com.elo.eloapi.model.servico.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
@@ -21,9 +23,9 @@ public record ServicoCreateRQ(
 
         @NotBlank String tpExecucao,
 
-        @NotNull List<ServicoDisponibilidadeCreateRQ> servicoDisponibilidadeCreateRQList,
+        @NotEmpty List<@Valid ServicoDisponibilidadeCreateRQ> servicoDisponibilidadeCreateRQList,
 
-        @NotNull List<ServicoImagemCreateRQ> servicoImagemCreateRQList
+        @NotNull List<@Valid ServicoImagemCreateRQ> servicoImagemCreateRQList
 ) {
 }
 

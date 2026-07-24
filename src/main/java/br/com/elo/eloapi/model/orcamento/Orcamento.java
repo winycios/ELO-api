@@ -2,7 +2,6 @@ package br.com.elo.eloapi.model.orcamento;
 
 import br.com.elo.eloapi.model.orcamentoStatus.OrcamentoStatus;
 import br.com.elo.eloapi.model.servico.Servico;
-import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -42,13 +41,13 @@ public class Orcamento implements Serializable {
     @JoinColumn(name = "fk_id_orcamento_status", nullable = false)
     private OrcamentoStatus orcamentoStatus;
 
-    @Column(name = "ds_descricao", length = 100)
+    @Column(name = "ds_descricao", nullable = false, length = 100)
     private String dsDescricao;
 
     @Column(name = "ds_observacao_profissional", length = 200)
     private String dsObservacaoProfissional;
 
-    @Column(name = "dt_preferido_solicitado")
+    @Column(name = "dt_preferido_solicitado", nullable = false)
     private LocalDateTime dtPreferidoSolicitado;
 
     @Column(name = "dt_inicio_proposto")

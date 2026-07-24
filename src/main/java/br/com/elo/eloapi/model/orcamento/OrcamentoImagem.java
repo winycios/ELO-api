@@ -22,6 +22,6 @@ public class OrcamentoImagem {
     @JoinColumn(name = "fk_id_orcamento", nullable = false)
     private Orcamento orcamento;
 
-    @Column(name = "url_imagem", length = 500)
+    @Column(name = "url_imagem", nullable = false, length = 500)
     private String url;
 }

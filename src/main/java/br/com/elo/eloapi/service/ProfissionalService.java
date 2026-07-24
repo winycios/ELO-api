@@ -1,5 +1,6 @@
 package br.com.elo.eloapi.service;
 
+import br.com.elo.eloapi.exception.BadRequestException;
 import br.com.elo.eloapi.exception.ResourceNotFound;
 import br.com.elo.eloapi.model.areaAtendimento.AreaAtendimento;
 import br.com.elo.eloapi.model.areaAtendimento.mapper.AreaAtendimentoMapper;
@@ -21,7 +22,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +44,7 @@ public class ProfissionalService {
     @Transactional
     public ServicoRS salvarServico(Usuario usuario, ServicoCreateRQ dto) {
         Profissional profissional = buscarProfissional(usuario);
+        validarDisponibilidades(dto.servicoDisponibilidadeCreateRQList());
         CategoriaEspecifica categoria = categoriaEspecificaRepository.findById(dto.idCategoriaEspecifica()).orElseThrow(() -> new ResourceNotFound("Categoria específica não encontrada"));
         Servico servico = dto.id() == null ? ServicoMapper.toEntity(dto) : servicoRepository.findByIdAndProfissionalIdAndStAtivoTrue(dto.id(), profissional.getId()).orElseThrow(() -> new ResourceNotFound("Serviço ativo não encontrado para este profissional"));
 
@@ -62,6 +67,7 @@ public class ProfissionalService {
 
         buscarServicosESalvarNoCache(profissional.getId());
         invalidarCacheDetalhes(profissional.getId());
+        invalidarCacheHorarios(profissional.getId());
         searchOutboxService.solicitarReindexacao(profissional.getId());
         return ServicoMapper.toResponse(servico, imagens, disponibilidades);
     }
@@ -86,6 +92,7 @@ public class ProfissionalService {
         servicoRepository.save(servico);
         buscarServicosESalvarNoCache(profissional.getId());
         invalidarCacheDetalhes(profissional.getId());
+        invalidarCacheHorarios(profissional.getId());
         searchOutboxService.solicitarReindexacao(profissional.getId());
     }
 
@@ -135,6 +142,29 @@ public class ProfissionalService {
         }).toList());
     }
 
+    private void validarDisponibilidades(List<ServicoDisponibilidadeCreateRQ> disponibilidades) {
+        for (ServicoDisponibilidadeCreateRQ disponibilidade : disponibilidades) {
+            if (!disponibilidade.hrInicio().isBefore(disponibilidade.hrFim())) {
+                throw new BadRequestException("O horário inicial deve ser anterior ao horário final.");
+            }
+        }
+
+        Map<Integer, List<ServicoDisponibilidadeCreateRQ>> disponibilidadesPorDia = disponibilidades.stream()
+                .collect(Collectors.groupingBy(ServicoDisponibilidadeCreateRQ::diaSemana));
+
+        for (List<ServicoDisponibilidadeCreateRQ> horariosDoDia : disponibilidadesPorDia.values()) {
+            List<ServicoDisponibilidadeCreateRQ> ordenados = horariosDoDia.stream()
+                    .sorted(Comparator.comparing(ServicoDisponibilidadeCreateRQ::hrInicio))
+                    .toList();
+
+            for (int indice = 1; indice < ordenados.size(); indice++) {
+                if (ordenados.get(indice - 1).hrFim().isAfter(ordenados.get(indice).hrInicio())) {
+                    throw new BadRequestException("Existem horários de disponibilidade sobrepostos no mesmo dia.");
+                }
+            }
+        }
+    }
+
     private ServicoRS toResponse(Servico servico) {
         return ServicoMapper.toResponse(
                 servico,
@@ -158,11 +188,20 @@ public class ProfissionalService {
         }
     }
 
+    private void invalidarCacheHorarios(Long profissionalId) {
+        try {
+            redisStore.deleteByPattern(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissionalId));
+        } catch (RuntimeException ignored) {
+            // A disponibilidade persistida no MySQL continua sendo a fonte de verdade.
+        }
+    }
+
     @Transactional
     public void disponibilizaProfissionalServico(Usuario usuario, Boolean isAtivar) {
         Profissional profissional = buscarProfissional(usuario);
         profissional.setStDisponivel(isAtivar);
         profissionalRepository.save(profissional);
+        invalidarCacheHorarios(profissional.getId());
         searchOutboxService.solicitarReindexacao(profissional.getId());
     }
 

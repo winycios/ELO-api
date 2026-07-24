@@ -23,12 +23,15 @@ public class RedisStore {
     public static final String KEY_PROF_SERVICES = "services:profissional:%d";
     public static final String KEY_PROFESSIONAL_DETAILS = "professional-details:%d:%d";
     public static final String KEY_PROFESSIONAL_DETAILS_PATTERN = "professional-details:%d:*";
+    public static final String KEY_AVAILABLE_HOURS = "available-hours:professional:%d:service:%d:week:%s";
+    public static final String KEY_AVAILABLE_HOURS_PATTERN = "available-hours:professional:%d:*";
 
     public static final Duration CACHE_DURATION = Duration.ofDays(1);
+    public static final Duration AVAILABLE_HOURS_CACHE_DURATION = Duration.ofMinutes(2);
 
 
     private final StringRedisTemplate redisTemplate;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
 
     //Hash set -- lista de sets

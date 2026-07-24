@@ -12,6 +12,15 @@ public interface ServicoDisponibilidadeRepository extends JpaRepository<ServicoD
 
     List<ServicoDisponibilidade> findAllByServicoIdOrderByDiaSemanaAscHrInicioAsc(Long servicoId);
 
+    List<ServicoDisponibilidade> findAllByServicoIdAndDiaSemanaAndStAtivoTrueOrderByHrInicioAsc(
+            Long servicoId,
+            Integer diaSemana
+    );
+
+    List<ServicoDisponibilidade> findAllByServicoIdAndStAtivoTrueOrderByDiaSemanaAscHrInicioAsc(
+            Long servicoId
+    );
+
     List<ServicoDisponibilidade> findAllByServicoIdInAndStAtivoTrueOrderByServicoIdAscDiaSemanaAscHrInicioAsc(
             Collection<Long> servicoIds
     );
