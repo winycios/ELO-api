@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
-public record ServicoCreateDTO(
+public record ServicoCreateRQ(
 
         Long id,
 
@@ -21,9 +21,9 @@ public record ServicoCreateDTO(
 
         @NotBlank String tpExecucao,
 
-        @NotNull List<ServicoDisponibilidadeCreateDTO> servicoDisponibilidadeCreateDTOList,
+        @NotNull List<ServicoDisponibilidadeCreateRQ> servicoDisponibilidadeCreateRQList,
 
-        @NotNull List<ServicoImagemCreateDTO> servicoImagemCreateDTOList
+        @NotNull List<ServicoImagemCreateRQ> servicoImagemCreateRQList
 ) {
 }
 

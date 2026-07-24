@@ -1,9 +1,9 @@
 package br.com.elo.eloapi.controller;
 
-import br.com.elo.eloapi.model.usuario.dto.LoginDTO;
-import br.com.elo.eloapi.model.usuario.dto.LoginResponseDTO;
-import br.com.elo.eloapi.model.usuario.dto.RefreshTokenDTO;
-import br.com.elo.eloapi.model.usuario.dto.UsuarioCreateDTO;
+import br.com.elo.eloapi.model.usuario.dto.LoginRQ;
+import br.com.elo.eloapi.model.usuario.dto.LoginResponseRS;
+import br.com.elo.eloapi.model.usuario.dto.RefreshTokenRQ;
+import br.com.elo.eloapi.model.usuario.dto.UsuarioCreateRQ;
 import br.com.elo.eloapi.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -21,19 +21,19 @@ public class AuthController {
     private final AuthService authenticationService;
 
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponseDTO> refreshToken(@RequestBody RefreshTokenDTO refreshToken) {
+    public ResponseEntity<LoginResponseRS> refreshToken(@RequestBody RefreshTokenRQ refreshToken) {
         return ResponseEntity.ok(authenticationService.refresh(refreshToken.refreshToken()));
     }
 
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> authenticate(@RequestBody @Valid LoginDTO loginUserDto) {
+    public ResponseEntity<LoginResponseRS> authenticate(@RequestBody @Valid LoginRQ loginUserDto) {
         return ResponseEntity.ok(authenticationService.authenticate(loginUserDto));
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Void> register(@RequestBody @Valid UsuarioCreateDTO usuarioCreateDto) {
-        authenticationService.createUser(usuarioCreateDto);
+    public ResponseEntity<Void> register(@RequestBody @Valid UsuarioCreateRQ usuarioCreateRQ) {
+        authenticationService.createUser(usuarioCreateRQ);
         return ResponseEntity.noContent().build();
     }
 

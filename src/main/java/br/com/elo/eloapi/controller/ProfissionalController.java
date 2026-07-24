@@ -2,7 +2,7 @@ package br.com.elo.eloapi.controller;
 
 import br.com.elo.eloapi.model.profissional.dto.ProfissionalRS;
 import br.com.elo.eloapi.model.profissional.dto.ProfissionalUpdateDTO;
-import br.com.elo.eloapi.model.servico.dto.ServicoCreateDTO;
+import br.com.elo.eloapi.model.servico.dto.ServicoCreateRQ;
 import br.com.elo.eloapi.model.servico.dto.ServicoListaRS;
 import br.com.elo.eloapi.model.servico.dto.ServicoRS;
 import br.com.elo.eloapi.model.usuario.Usuario;
@@ -23,8 +23,8 @@ public class ProfissionalController {
     private final ProfissionalService profissionalService;
 
     @PostMapping("/servico")
-    public ResponseEntity<ServicoRS> salvarServico(@AuthenticationPrincipal Usuario usuario, @RequestBody @Valid ServicoCreateDTO servicoCreateDTO) {
-        return ResponseEntity.ok(profissionalService.salvarServico(usuario, servicoCreateDTO));
+    public ResponseEntity<ServicoRS> salvarServico(@AuthenticationPrincipal Usuario usuario, @RequestBody @Valid ServicoCreateRQ servicoCreateRQ) {
+        return ResponseEntity.ok(profissionalService.salvarServico(usuario, servicoCreateRQ));
     }
 
     @GetMapping("/servico/listar")

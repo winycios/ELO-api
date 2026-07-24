@@ -117,17 +117,17 @@ public class VitrineService {
     }
 
     @Transactional
-    public PublicacaoFeedRS salvarPublicacao(PublicacaoCreateDTO publicacaoCreateDTO, Usuario usuario) {
-        Publicacao publicacao = PublicacaoMapper.toEntity(publicacaoCreateDTO);
+    public PublicacaoFeedRS salvarPublicacao(PublicacaoCreateRQ publicacaoCreateRQ, Usuario usuario) {
+        Publicacao publicacao = PublicacaoMapper.toEntity(publicacaoCreateRQ);
 
         Profissional profissional = profissionalRepository.findById(usuario.getId()).orElseThrow(() -> new ResourceNotFound("Profissional não encontrado"));
 
         publicacao.setProfissional(profissional);
-        publicacao.setCategoriaEspecifica(categoriaEspecificaRepository.findById(publicacaoCreateDTO.idCategoriaEspecifica()).orElseThrow(() -> new ResourceNotFound("Categoria específica não encontrada")));
+        publicacao.setCategoriaEspecifica(categoriaEspecificaRepository.findById(publicacaoCreateRQ.idCategoriaEspecifica()).orElseThrow(() -> new ResourceNotFound("Categoria específica não encontrada")));
         publicacao = publicacaoRepository.save(publicacao);
 
         Publicacao finalPublicacao = publicacao;
-        List<PublicacaoImagem> imagens = imagemRepository.saveAll(publicacaoCreateDTO.publicacaoImagemDTOList().stream().map(image -> PublicacaoMapper.toImageEntity(image, finalPublicacao)).toList());
+        List<PublicacaoImagem> imagens = imagemRepository.saveAll(publicacaoCreateRQ.publicacaoImagemRQList().stream().map(image -> PublicacaoMapper.toImageEntity(image, finalPublicacao)).toList());
 
         Map<Long, List<PublicacaoImagemRS>> imagensPorPublicacao = Map.of(publicacao.getId(), imagens.stream().map(PublicacaoMapper::toImageResponse).toList());
         return PublicacaoMapper.toFeedResponse(publicacao, imagensPorPublicacao, Map.of(), Map.of());

@@ -3,7 +3,7 @@ package br.com.elo.eloapi.model.areaAtendimento.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-public record AreaAtendimentoUpdateDTO(
+public record AreaAtendimentoUpdateRQ(
         Long id,
 
         @NotNull Double nrLatitude,

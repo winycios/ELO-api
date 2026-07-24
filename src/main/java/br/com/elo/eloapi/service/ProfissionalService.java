@@ -38,7 +38,7 @@ public class ProfissionalService {
 
 
     @Transactional
-    public ServicoRS salvarServico(Usuario usuario, ServicoCreateDTO dto) {
+    public ServicoRS salvarServico(Usuario usuario, ServicoCreateRQ dto) {
         Profissional profissional = buscarProfissional(usuario);
         CategoriaEspecifica categoria = categoriaEspecificaRepository.findById(dto.idCategoriaEspecifica()).orElseThrow(() -> new ResourceNotFound("Categoria específica não encontrada"));
         Servico servico = dto.id() == null ? ServicoMapper.toEntity(dto) : servicoRepository.findByIdAndProfissionalIdAndStAtivoTrue(dto.id(), profissional.getId()).orElseThrow(() -> new ResourceNotFound("Serviço ativo não encontrado para este profissional"));
@@ -57,8 +57,8 @@ public class ProfissionalService {
             servicoDisponibilidadeRepository.deleteAllByServicoId(servico.getId());
         }
 
-        List<ServicoImagem> imagens = salvarImagens(servico, dto.servicoImagemCreateDTOList());
-        List<ServicoDisponibilidade> disponibilidades = salvarDisponibilidades(servico, dto.servicoDisponibilidadeCreateDTOList());
+        List<ServicoImagem> imagens = salvarImagens(servico, dto.servicoImagemCreateRQList());
+        List<ServicoDisponibilidade> disponibilidades = salvarDisponibilidades(servico, dto.servicoDisponibilidadeCreateRQList());
 
         buscarServicosESalvarNoCache(profissional.getId());
         invalidarCacheDetalhes(profissional.getId());
@@ -101,7 +101,7 @@ public class ProfissionalService {
                     novaArea.setProfissional(profissional);
                     return novaArea;
                 });
-        AreaAtendimentoMapper.toUpdateEntity(areaAtendimento, profissionalUpdateDTO.areaAtendimentoUpdateDTO());
+        AreaAtendimentoMapper.toUpdateEntity(areaAtendimento, profissionalUpdateDTO.areaAtendimentoUpdateRQ());
         AreaAtendimento areaAtualizada = areaAtendimentoRepository.save(areaAtendimento);
         invalidarCacheDetalhes(profissional.getId());
         searchOutboxService.solicitarReindexacao(profissional.getId());
@@ -113,7 +113,7 @@ public class ProfissionalService {
                 .orElseThrow(() -> new ResourceNotFound("Profissional não encontrado"));
     }
 
-    private List<ServicoImagem> salvarImagens(Servico servico, List<ServicoImagemCreateDTO> dtos) {
+    private List<ServicoImagem> salvarImagens(Servico servico, List<ServicoImagemCreateRQ> dtos) {
         return servicoImagemRepository.saveAll(dtos.stream().map(dto -> {
             ServicoImagem imagem = new ServicoImagem();
             imagem.setServico(servico);
@@ -123,7 +123,7 @@ public class ProfissionalService {
         }).toList());
     }
 
-    private List<ServicoDisponibilidade> salvarDisponibilidades(Servico servico, List<ServicoDisponibilidadeCreateDTO> dtos) {
+    private List<ServicoDisponibilidade> salvarDisponibilidades(Servico servico, List<ServicoDisponibilidadeCreateRQ> dtos) {
         return servicoDisponibilidadeRepository.saveAll(dtos.stream().map(dto -> {
             ServicoDisponibilidade disponibilidade = new ServicoDisponibilidade();
             disponibilidade.setServico(servico);

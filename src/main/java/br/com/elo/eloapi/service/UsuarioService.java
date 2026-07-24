@@ -5,11 +5,11 @@ import br.com.elo.eloapi.exception.ResourceNotFound;
 import br.com.elo.eloapi.integration.cep.AwesomeApiCepClient;
 import br.com.elo.eloapi.model.endereco.Endereco;
 import br.com.elo.eloapi.model.endereco.dto.Coordenadas;
-import br.com.elo.eloapi.model.endereco.dto.EnderecoCreateDTO;
+import br.com.elo.eloapi.model.endereco.dto.EnderecoCreateRQ;
 import br.com.elo.eloapi.model.endereco.dto.EnderecoRS;
 import br.com.elo.eloapi.model.endereco.mapper.EnderecoMapper;
 import br.com.elo.eloapi.model.usuario.Usuario;
-import br.com.elo.eloapi.model.usuario.dto.UsuarioEditDTO;
+import br.com.elo.eloapi.model.usuario.dto.UsuarioEditRQ;
 import br.com.elo.eloapi.model.usuario.dto.UsuarioRS;
 import br.com.elo.eloapi.model.usuario.mapper.UsuarioMapper;
 import br.com.elo.eloapi.repository.EnderecoRepository;
@@ -34,14 +34,14 @@ public class UsuarioService {
     private final RedisStore redisStore;
 
     @Transactional
-    public UsuarioRS editarPerfil(Usuario usuarioAutenticado, UsuarioEditDTO usuarioEditDTO) {
+    public UsuarioRS editarPerfil(Usuario usuarioAutenticado, UsuarioEditRQ usuarioEditRQ) {
         Usuario usuario = usuarioRepository.findById(usuarioAutenticado.getId()).orElseThrow(() -> new ResourceNotFound("Usuário não encontrado"));
 
-        usuario.setNome(usuarioEditDTO.nome());
-        usuario.setSobrenome(usuarioEditDTO.sobrenome());
-        usuario.setEmail(usuarioEditDTO.email());
-        usuario.setTelCelular(usuarioEditDTO.telContato());
-        usuario.setTelWhats(usuarioEditDTO.telContatoZap());
+        usuario.setNome(usuarioEditRQ.nome());
+        usuario.setSobrenome(usuarioEditRQ.sobrenome());
+        usuario.setEmail(usuarioEditRQ.email());
+        usuario.setTelCelular(usuarioEditRQ.telContato());
+        usuario.setTelWhats(usuarioEditRQ.telContatoZap());
 
         usuario = usuarioRepository.save(usuario);
         invalidarCacheDetalhes(usuario.getId());
@@ -54,10 +54,10 @@ public class UsuarioService {
     }
 
     @Transactional
-    public EnderecoRS salvarEndereco(Usuario usuario, EnderecoCreateDTO enderecoCreateDTO) {
-        Endereco endereco = EnderecoMapper.toEntity(enderecoCreateDTO);
+    public EnderecoRS salvarEndereco(Usuario usuario, EnderecoCreateRQ enderecoCreateRQ) {
+        Endereco endereco = EnderecoMapper.toEntity(enderecoCreateRQ);
 
-        Coordenadas coordenadas = awesomeApiCepClient.buscarCoordenadas(enderecoCreateDTO.cep());
+        Coordenadas coordenadas = awesomeApiCepClient.buscarCoordenadas(enderecoCreateRQ.cep());
 
         if (!enderecoRepository.existsEnderecoByUsuarioId(usuario.getId())) {
             endereco.setStPrincipal(true);

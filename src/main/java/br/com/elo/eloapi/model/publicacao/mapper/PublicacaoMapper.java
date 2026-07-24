@@ -16,7 +16,7 @@ import java.util.Map;
 @AllArgsConstructor
 public final class PublicacaoMapper {
 
-    public static Publicacao toEntity(PublicacaoCreateDTO dto) {
+    public static Publicacao toEntity(PublicacaoCreateRQ dto) {
         Publicacao publicacao = new Publicacao();
         publicacao.setDsPublicacao(dto.dsPublicacao());
         publicacao.setDtPublicacao(LocalDateTime.now());
@@ -24,7 +24,7 @@ public final class PublicacaoMapper {
         return publicacao;
     }
 
-    public static PublicacaoImagem toImageEntity(PublicacaoImagemDTO dto, Publicacao publicacao) {
+    public static PublicacaoImagem toImageEntity(PublicacaoImagemRQ dto, Publicacao publicacao) {
         return new PublicacaoImagem(null, publicacao, dto.urlImagem(), dto.nrOrdem());
     }
 

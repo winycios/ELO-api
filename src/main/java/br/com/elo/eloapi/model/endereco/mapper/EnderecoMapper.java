@@ -3,7 +3,7 @@ package br.com.elo.eloapi.model.endereco.mapper;
 
 import br.com.elo.eloapi.model.endereco.Endereco;
 import br.com.elo.eloapi.model.endereco.TipoEndereco;
-import br.com.elo.eloapi.model.endereco.dto.EnderecoCreateDTO;
+import br.com.elo.eloapi.model.endereco.dto.EnderecoCreateRQ;
 import br.com.elo.eloapi.model.endereco.dto.EnderecoRS;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public final class EnderecoMapper {
 
-    public static Endereco toEntity(EnderecoCreateDTO dto) {
+    public static Endereco toEntity(EnderecoCreateRQ dto) {
         Endereco endereco = new Endereco();
 
         endereco.setId(dto.id());

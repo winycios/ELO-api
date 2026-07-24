@@ -1,11 +1,11 @@
 package br.com.elo.eloapi.controller;
 
 import br.com.elo.eloapi.model.endereco.Endereco;
-import br.com.elo.eloapi.model.endereco.dto.EnderecoCreateDTO;
+import br.com.elo.eloapi.model.endereco.dto.EnderecoCreateRQ;
 import br.com.elo.eloapi.model.endereco.dto.EnderecoRS;
 import br.com.elo.eloapi.model.endereco.mapper.EnderecoMapper;
 import br.com.elo.eloapi.model.usuario.Usuario;
-import br.com.elo.eloapi.model.usuario.dto.UsuarioEditDTO;
+import br.com.elo.eloapi.model.usuario.dto.UsuarioEditRQ;
 import br.com.elo.eloapi.model.usuario.dto.UsuarioRS;
 import br.com.elo.eloapi.model.usuario.mapper.UsuarioMapper;
 import br.com.elo.eloapi.service.UsuarioService;
@@ -28,8 +28,8 @@ public class UsuarioController {
     @PutMapping(value = "/perfil")
     public ResponseEntity<UsuarioRS> editarPerfil(
             @AuthenticationPrincipal Usuario usuario,
-            @RequestBody @Valid UsuarioEditDTO usuarioEditDTO) {
-        return ResponseEntity.ok().body(usuarioService.editarPerfil(usuario, usuarioEditDTO));
+            @RequestBody @Valid UsuarioEditRQ usuarioEditRQ) {
+        return ResponseEntity.ok().body(usuarioService.editarPerfil(usuario, usuarioEditRQ));
     }
 
     @GetMapping(value = "/perfil")
@@ -38,8 +38,8 @@ public class UsuarioController {
     }
 
     @PostMapping(value = "/endereco")
-    public ResponseEntity<EnderecoRS> salvarEndereco(@AuthenticationPrincipal Usuario usuario, @RequestBody @Valid EnderecoCreateDTO enderecoCreateDTO) {
-        return ResponseEntity.ok().body(usuarioService.salvarEndereco(usuario, enderecoCreateDTO));
+    public ResponseEntity<EnderecoRS> salvarEndereco(@AuthenticationPrincipal Usuario usuario, @RequestBody @Valid EnderecoCreateRQ enderecoCreateRQ) {
+        return ResponseEntity.ok().body(usuarioService.salvarEndereco(usuario, enderecoCreateRQ));
     }
 
     @GetMapping(value = "/endereco/principal")

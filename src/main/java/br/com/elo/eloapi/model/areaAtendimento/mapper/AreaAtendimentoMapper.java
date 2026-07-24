@@ -2,7 +2,7 @@ package br.com.elo.eloapi.model.areaAtendimento.mapper;
 
 import br.com.elo.eloapi.model.areaAtendimento.AreaAtendimento;
 import br.com.elo.eloapi.model.areaAtendimento.dto.AreaAtendimentoRS;
-import br.com.elo.eloapi.model.areaAtendimento.dto.AreaAtendimentoUpdateDTO;
+import br.com.elo.eloapi.model.areaAtendimento.dto.AreaAtendimentoUpdateRQ;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public final class AreaAtendimentoMapper {
 
-    public static void toUpdateEntity(AreaAtendimento areaAtendimento, AreaAtendimentoUpdateDTO dto) {
+    public static void toUpdateEntity(AreaAtendimento areaAtendimento, AreaAtendimentoUpdateRQ dto) {
 
         areaAtendimento.setNmBairro(dto.nmBairro());
         areaAtendimento.setNrLatitude(dto.nrLatitude());
@@ -21,7 +21,7 @@ public final class AreaAtendimentoMapper {
     }
 
 
-    public static AreaAtendimento toEntity(AreaAtendimentoUpdateDTO dto) {
+    public static AreaAtendimento toEntity(AreaAtendimentoUpdateRQ dto) {
         AreaAtendimento areaAtendimento = new AreaAtendimento();
         toUpdateEntity(areaAtendimento, dto);
         return areaAtendimento;

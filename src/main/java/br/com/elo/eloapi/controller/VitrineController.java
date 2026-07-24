@@ -34,8 +34,8 @@ public class VitrineController {
     }
 
     @PostMapping("profissional/publicacao")
-    public ResponseEntity<PublicacaoFeedRS> salvarPublicacao(@RequestBody @Valid PublicacaoCreateDTO publicacaoCreateDTO, @AuthenticationPrincipal Usuario usuario) {
-        return ResponseEntity.ok().body(vitrineService.salvarPublicacao(publicacaoCreateDTO, usuario));
+    public ResponseEntity<PublicacaoFeedRS> salvarPublicacao(@RequestBody @Valid PublicacaoCreateRQ publicacaoCreateRQ, @AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok().body(vitrineService.salvarPublicacao(publicacaoCreateRQ, usuario));
     }
 
     @DeleteMapping("profissional/publicacao/{id}")

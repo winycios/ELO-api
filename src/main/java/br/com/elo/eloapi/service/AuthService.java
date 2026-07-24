@@ -7,9 +7,9 @@ import br.com.elo.eloapi.exception.UnauthorizedException;
 import br.com.elo.eloapi.model.profissional.Profissional;
 import br.com.elo.eloapi.model.redis.RefreshTokenData;
 import br.com.elo.eloapi.model.usuario.Usuario;
-import br.com.elo.eloapi.model.usuario.dto.LoginDTO;
-import br.com.elo.eloapi.model.usuario.dto.LoginResponseDTO;
-import br.com.elo.eloapi.model.usuario.dto.UsuarioCreateDTO;
+import br.com.elo.eloapi.model.usuario.dto.LoginRQ;
+import br.com.elo.eloapi.model.usuario.dto.LoginResponseRS;
+import br.com.elo.eloapi.model.usuario.dto.UsuarioCreateRQ;
 import br.com.elo.eloapi.model.usuario.mapper.UsuarioMapper;
 import br.com.elo.eloapi.repository.ProfissionalRepository;
 import br.com.elo.eloapi.repository.RedisStore;
@@ -59,23 +59,23 @@ public class AuthService {
     }
 
     @Transactional
-    public void createUser(UsuarioCreateDTO usuarioCreateDto) {
-        if (usuarioRepository.findByEmail(usuarioCreateDto.email()).isPresent()) {
+    public void createUser(UsuarioCreateRQ usuarioCreateRQ) {
+        if (usuarioRepository.findByEmail(usuarioCreateRQ.email()).isPresent()) {
             throw new ConflictException("Email já cadastrado!");
         }
 
-        Usuario usuario = usuarioMapper.toEntity(usuarioCreateDto);
+        Usuario usuario = usuarioMapper.toEntity(usuarioCreateRQ);
         usuario = usuarioRepository.save(usuario);
-        Profissional profissional = profissionalRepository.save(new Profissional(usuario, !usuarioCreateDto.cadastroAcao().isCadastrarUsuario()));
+        Profissional profissional = profissionalRepository.save(new Profissional(usuario, !usuarioCreateRQ.cadastroAcao().isCadastrarUsuario()));
         searchOutboxService.solicitarReindexacao(profissional.getId());
     }
 
-    public LoginResponseDTO authenticate(LoginDTO loginDto) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDto.email(), loginDto.senha()));
-        return buildLoginResponse(profissionalRepository.findByUsuarioEmail(loginDto.email()).orElseThrow(() -> new ResourceNotFound("Usuário não encontrado!")), false, loginDto.deviceCode());
+    public LoginResponseRS authenticate(LoginRQ loginRQ) {
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRQ.email(), loginRQ.senha()));
+        return buildLoginResponse(profissionalRepository.findByUsuarioEmail(loginRQ.email()).orElseThrow(() -> new ResourceNotFound("Usuário não encontrado!")), false, loginRQ.deviceCode());
     }
 
-    public LoginResponseDTO refresh(String token) {
+    public LoginResponseRS refresh(String token) {
         if (token == null || token.isBlank()) {
             throw new UnauthorizedException("Refresh token não informado.");
         }
@@ -100,7 +100,7 @@ public class AuthService {
         return buildLoginResponse(profissional, true, deviceCode);
     }
 
-    private LoginResponseDTO buildLoginResponse(Profissional profissional, Boolean isRefresh, String deviceCode) {
+    private LoginResponseRS buildLoginResponse(Profissional profissional, Boolean isRefresh, String deviceCode) {
         String accessToken = jwtService.generateToken(profissional.getUsuario(), deviceCode, accessTokenExpiration);
         String refreshToken = isRefresh ? null : jwtService.generateToken(profissional.getUsuario(), deviceCode, refreshTokenExpiration);
 
@@ -113,6 +113,6 @@ public class AuthService {
             redisStore.saveHSet(String.format(RedisStore.KEY_TEMPLATE_AUTH, profissional.getUsuario().getId()), deviceCode, data, Duration.ofMillis(refreshTokenExpiration));
         }
 
-        return new LoginResponseDTO(profissional.getId(), accessToken, refreshToken, profissional.getUsuario().nomeCompleto(), profissional.getUsuario().getUriPerfil(), profissional.getUriPerfil(), profissional.getStHabilitado(), profissional.getUsuario().getStHabilitado());
+        return new LoginResponseRS(profissional.getId(), accessToken, refreshToken, profissional.getUsuario().nomeCompleto(), profissional.getUsuario().getUriPerfil(), profissional.getUriPerfil(), profissional.getStHabilitado(), profissional.getUsuario().getStHabilitado());
     }
 }

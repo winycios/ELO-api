@@ -5,7 +5,7 @@ import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
 import br.com.elo.eloapi.model.servico.ServicoImagem;
 import br.com.elo.eloapi.model.servico.TipoServico;
-import br.com.elo.eloapi.model.servico.dto.ServicoCreateDTO;
+import br.com.elo.eloapi.model.servico.dto.ServicoCreateRQ;
 import br.com.elo.eloapi.model.servico.dto.ServicoListaRS;
 import br.com.elo.eloapi.model.servico.dto.ServicoRS;
 import lombok.AllArgsConstructor;
@@ -17,7 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 public final class ServicoMapper {
 
-    public static Servico toEntity(ServicoCreateDTO dto) {
+    public static Servico toEntity(ServicoCreateRQ dto) {
         Servico servico = new Servico();
         CategoriaEspecifica categoriaEspecifica = new CategoriaEspecifica();
 

@@ -1,6 +1,6 @@
 package br.com.elo.eloapi.model.usuario.dto;
 
-public record LoginResponseDTO(
+public record LoginResponseRS(
         Long id,
         String token,
         String refreshToken,
@@ -10,7 +10,7 @@ public record LoginResponseDTO(
         Boolean isProfissional,
         Boolean isCliente
 ) {
-    public LoginResponseDTO(Long id, String token, String refreshToken) {
+    public LoginResponseRS(Long id, String token, String refreshToken) {
         this(id, token, refreshToken, null, null, null, null, null);
     }
 }
