@@ -1,6 +1,7 @@
 package br.com.elo.eloapi.model.orcamento;
 
 import br.com.elo.eloapi.model.orcamentoStatus.OrcamentoStatus;
+import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import jakarta.persistence.*;
@@ -11,6 +12,7 @@ import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -29,8 +31,8 @@ public class Orcamento implements Serializable {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_id_servico_disponibilidade", nullable = false)
-    private ServicoDisponibilidade servicoDisponibilidade;
+    @JoinColumn(name = "fk_id_servico", nullable = false)
+    private Servico servico;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_id_usuario", nullable = false)
@@ -45,4 +47,13 @@ public class Orcamento implements Serializable {
 
     @Column(name = "ds_observacao_profissional", length = 200)
     private String dsObservacaoProfissional;
+
+    @Column(name = "dt_preferido_solicitado")
+    private LocalDateTime dtPreferidoSolicitado;
+
+    @Column(name = "dt_inicio_proposto")
+    private LocalDateTime dtInicioProposto;
+
+    @Column(name = "dt_fim_proposto")
+    private LocalDateTime dtFimProposto;
 }

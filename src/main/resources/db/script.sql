@@ -186,49 +186,26 @@ CREATE INDEX `fk_Servico_Categoria_Especifica1_idx` ON `database_elo`.`servico` 
 
 
 -- -----------------------------------------------------
--- Table `database_elo`.`servico_disponibilidade`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `database_elo`.`servico_disponibilidade`
-(
-    `id_servico_disponibilidade` INT      NOT NULL AUTO_INCREMENT,
-    `fk_id_servico`              INT      NOT NULL,
-    `nr_dia_semana`              INT      NULL DEFAULT NULL,
-    `hr_inicio`                  TIME     NULL DEFAULT NULL,
-    `hr_fim`                     TIME     NULL DEFAULT NULL,
-    `st_ativo`                   TINYINT  NULL DEFAULT NULL,
-    `dt_criacao`                 DATETIME NULL DEFAULT NULL,
-    PRIMARY KEY (`id_servico_disponibilidade`),
-    CONSTRAINT `fk_Servico_Disponibilidade_Servico1`
-    FOREIGN KEY (`fk_id_servico`)
-    REFERENCES `database_elo`.`servico` (`id_servico`)
-    )
-    ENGINE = InnoDB
-    DEFAULT CHARACTER SET = utf8mb3;
-
-CREATE INDEX `fk_Servico_Disponibilidade_Servico1_idx` ON `database_elo`.`servico_disponibilidade` (`fk_id_servico` ASC) VISIBLE;
-
-
--- -----------------------------------------------------
 -- Table `database_elo`.`orcamento`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento`
 (
-    `id_orcamento`                  INT          NOT NULL AUTO_INCREMENT,
-    `fk_id_servico_disponibilidade` INT          NOT NULL,
-    `fk_id_usuario`                 INT          NOT NULL,
-    `fk_id_reserva_Status`          INT          NOT NULL,
-    `ds_descricao`                  VARCHAR(100) NULL DEFAULT NULL,
-    `ds_observacao_profissional`    VARCHAR(200) NULL DEFAULT NULL,
-    `dt_inicio`                     DATETIME     NULL DEFAULT NULL,
-    `dt_fim`                        DATETIME     NULL DEFAULT NULL,
-    `ds_endereco`                   VARCHAR(200) NULL DEFAULT NULL,
+    `id_orcamento`               INT          NOT NULL AUTO_INCREMENT,
+    `fk_id_servico`              INT          NOT NULL,
+    `fk_id_usuario`              INT          NOT NULL,
+    `fk_id_orcamento_status`     INT          NOT NULL,
+    `ds_descricao`               VARCHAR(100) NULL DEFAULT NULL,
+    `ds_observacao_profissional` VARCHAR(200) NULL DEFAULT NULL,
+    `dt_preferido_solicitado`    DATETIME     NULL DEFAULT NULL,
+    `dt_inicio_proposto`         DATETIME     NULL DEFAULT NULL,
+    `dt_fim_proposto`            DATETIME     NULL DEFAULT NULL,
     PRIMARY KEY (`id_orcamento`),
     CONSTRAINT `fk_Orcamento_Orcamento_Status1`
-    FOREIGN KEY (`fk_id_reserva_Status`)
+    FOREIGN KEY (`fk_id_orcamento_status`)
     REFERENCES `database_elo`.`orcamento_status` (`id_orcamento_status`),
-    CONSTRAINT `fk_Orcamento_Servico_Disponibilidade1`
-    FOREIGN KEY (`fk_id_servico_disponibilidade`)
-    REFERENCES `database_elo`.`servico_disponibilidade` (`id_servico_disponibilidade`),
+    CONSTRAINT `fk_Orcamento_Servico1`
+    FOREIGN KEY (`fk_id_servico`)
+    REFERENCES `database_elo`.`servico` (`id_servico`),
     CONSTRAINT `fk_Orcamento_Usuario1`
     FOREIGN KEY (`fk_id_usuario`)
     REFERENCES `database_elo`.`usuario` (`id_usuario`)
@@ -236,11 +213,11 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento`
     ENGINE = InnoDB
     DEFAULT CHARACTER SET = utf8mb3;
 
-CREATE INDEX `fk_Orcamento_Orcamento_Status1_idx` ON `database_elo`.`orcamento` (`fk_id_reserva_Status` ASC) VISIBLE;
+CREATE INDEX `fk_Orcamento_Orcamento_Status1_idx` ON `database_elo`.`orcamento` (`fk_id_orcamento_status` ASC) VISIBLE;
 
 CREATE INDEX `fk_Orcamento_Usuario1_idx` ON `database_elo`.`orcamento` (`fk_id_usuario` ASC) VISIBLE;
 
-CREATE INDEX `fk_Orcamento_Servico_Disponibilidade1_idx` ON `database_elo`.`orcamento` (`fk_id_servico_disponibilidade` ASC) VISIBLE;
+CREATE INDEX `fk_Orcamento_Servico1_idx` ON `database_elo`.`orcamento` (`fk_id_servico` ASC) VISIBLE;
 
 
 -- -----------------------------------------------------
@@ -332,16 +309,17 @@ CREATE INDEX `fk_Orcamento_Custos_Orcamento1_idx` ON `database_elo`.`orcamento_c
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento_endereco`
 (
-    `id_orcamento_endereco` INT                                               NOT NULL AUTO_INCREMENT,
-    `fk_id_orcamento`       INT                                               NOT NULL,
-    `tp_endereco`           ENUM ('execucao', 'retirada', 'entrega')          NULL DEFAULT NULL,
-    `nm_rua`                VARCHAR(45)                                       NULL DEFAULT NULL,
-    `nm_complemento`        VARCHAR(45)                                       NULL DEFAULT NULL,
-    `nm_bairro`             VARCHAR(45)                                       NULL DEFAULT NULL,
-    `nm_cidade`             VARCHAR(45)                                       NULL DEFAULT NULL,
-    `nm_estado`             VARCHAR(45)                                       NULL DEFAULT NULL,
-    `nr_cep`                VARCHAR(45)                                       NULL DEFAULT NULL,
-    `tp_execucao`           ENUM ('presencial', 'remoto', 'retirada_entrega') NOT NULL,
+    `id_orcamento_endereco` INT         NOT NULL AUTO_INCREMENT,
+    `fk_id_orcamento`       INT         NOT NULL,
+    `nm_rua`                VARCHAR(45) NULL DEFAULT NULL,
+    `nm_complemento`        VARCHAR(45) NULL DEFAULT NULL,
+    `nm_bairro`             VARCHAR(45) NULL DEFAULT NULL,
+    `nm_cidade`             VARCHAR(45) NULL DEFAULT NULL,
+    `nm_estado`             VARCHAR(45) NULL DEFAULT NULL,
+    `nr_cep`                VARCHAR(45) NULL DEFAULT NULL,
+    `nr_rua`                INT         NULL DEFAULT NULL,
+    `nr_latitude`           DOUBLE      NULL DEFAULT NULL,
+    `nr_longitude`          DOUBLE      NULL DEFAULT NULL,
     PRIMARY KEY (`id_orcamento_endereco`),
     CONSTRAINT `fk_Orcamento_endereco_Orcamento1`
     FOREIGN KEY (`fk_id_orcamento`)
@@ -351,6 +329,25 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento_endereco`
     DEFAULT CHARACTER SET = utf8mb3;
 
 CREATE INDEX `fk_Orcamento_endereco_Orcamento1_idx` ON `database_elo`.`orcamento_endereco` (`fk_id_orcamento` ASC) VISIBLE;
+
+
+-- -----------------------------------------------------
+-- Table `database_elo`.`orcamento_imagem`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento_imagem`
+(
+    `id_orcamento_imagem` INT          NOT NULL AUTO_INCREMENT,
+    `url_imagem`          VARCHAR(500) NOT NULL,
+    `fk_id_orcamento`     INT          NULL DEFAULT NULL,
+    PRIMARY KEY (`id_orcamento_imagem`),
+    CONSTRAINT `fk_Orcamento_Imagem_Orcamento`
+    FOREIGN KEY (`fk_id_orcamento`)
+    REFERENCES `database_elo`.`orcamento` (`id_orcamento`)
+    )
+    ENGINE = InnoDB
+    DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE INDEX `fk_Orcamento_Imagem_Orcamento_idx` ON `database_elo`.`orcamento_imagem` (`fk_id_orcamento` ASC) VISIBLE;
 
 
 -- -----------------------------------------------------
@@ -482,6 +479,29 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`search_outbox`
 CREATE INDEX `fk_Search_Outbox_Profissional` ON `database_elo`.`search_outbox` (`fk_profissional_id` ASC) VISIBLE;
 
 CREATE INDEX `idx_search_outbox_pendente` ON `database_elo`.`search_outbox` (`dt_processamento` ASC, `nr_tentativas` ASC, `id_search_outbox` ASC) VISIBLE;
+
+
+-- -----------------------------------------------------
+-- Table `database_elo`.`servico_disponibilidade`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `database_elo`.`servico_disponibilidade`
+(
+    `id_servico_disponibilidade` INT      NOT NULL AUTO_INCREMENT,
+    `fk_id_servico`              INT      NOT NULL,
+    `nr_dia_semana`              INT      NULL DEFAULT NULL,
+    `hr_inicio`                  TIME     NULL DEFAULT NULL,
+    `hr_fim`                     TIME     NULL DEFAULT NULL,
+    `st_ativo`                   TINYINT  NULL DEFAULT NULL,
+    `dt_criacao`                 DATETIME NULL DEFAULT NULL,
+    PRIMARY KEY (`id_servico_disponibilidade`),
+    CONSTRAINT `fk_Servico_Disponibilidade_Servico1`
+    FOREIGN KEY (`fk_id_servico`)
+    REFERENCES `database_elo`.`servico` (`id_servico`)
+    )
+    ENGINE = InnoDB
+    DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE INDEX `fk_Servico_Disponibilidade_Servico1_idx` ON `database_elo`.`servico_disponibilidade` (`fk_id_servico` ASC) VISIBLE;
 
 
 -- -----------------------------------------------------
