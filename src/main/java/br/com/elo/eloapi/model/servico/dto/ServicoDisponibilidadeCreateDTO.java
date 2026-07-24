@@ -1,25 +1,20 @@
 package br.com.elo.eloapi.model.servico.dto;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalTime;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class ServicoDisponibilidadeCreateDTO {
+public record ServicoDisponibilidadeCreateDTO(
 
-    private Long id;
+        Long id,
 
-    @NotNull
-    private Integer diaSemana;
+        @NotNull
+        Integer diaSemana,
 
-    @NotNull
-    private LocalTime hrInicio;
+        @NotNull
+        LocalTime hrInicio,
 
-    @NotNull
-    private LocalTime hrFim;
+        @NotNull
+        LocalTime hrFim
+) {
 }

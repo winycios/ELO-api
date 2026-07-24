@@ -40,25 +40,25 @@ public class ProfissionalService {
     @Transactional
     public ServicoRS salvarServico(Usuario usuario, ServicoCreateDTO dto) {
         Profissional profissional = buscarProfissional(usuario);
-        CategoriaEspecifica categoria = categoriaEspecificaRepository.findById(dto.getIdCategoriaEspecifica()).orElseThrow(() -> new ResourceNotFound("Categoria específica não encontrada"));
-        Servico servico = dto.getId() == null ? ServicoMapper.toEntity(dto) : servicoRepository.findByIdAndProfissionalIdAndStAtivoTrue(dto.getId(), profissional.getId()).orElseThrow(() -> new ResourceNotFound("Serviço ativo não encontrado para este profissional"));
+        CategoriaEspecifica categoria = categoriaEspecificaRepository.findById(dto.idCategoriaEspecifica()).orElseThrow(() -> new ResourceNotFound("Categoria específica não encontrada"));
+        Servico servico = dto.id() == null ? ServicoMapper.toEntity(dto) : servicoRepository.findByIdAndProfissionalIdAndStAtivoTrue(dto.id(), profissional.getId()).orElseThrow(() -> new ResourceNotFound("Serviço ativo não encontrado para este profissional"));
 
         servico.setProfissional(profissional);
         servico.setCategoriaEspecifica(categoria);
-        servico.setDsDescricao(dto.getDsDescricao());
-        servico.setVlServico(dto.getVlServico());
-        servico.setDsTag(dto.getDsTag());
-        servico.setTipoServico(TipoServico.buscarTipo(dto.getTpExecucao()));
+        servico.setDsDescricao(dto.dsDescricao());
+        servico.setVlServico(dto.vlServico());
+        servico.setDsTag(dto.dsTag());
+        servico.setTipoServico(TipoServico.buscarTipo(dto.tpExecucao()));
         servico.setStAtivo(true);
         servico = servicoRepository.save(servico);
 
-        if (dto.getId() != null) {
+        if (dto.id() != null) {
             servicoImagemRepository.deleteAllByServicoId(servico.getId());
             servicoDisponibilidadeRepository.deleteAllByServicoId(servico.getId());
         }
 
-        List<ServicoImagem> imagens = salvarImagens(servico, dto.getServicoImagemCreateDTOList());
-        List<ServicoDisponibilidade> disponibilidades = salvarDisponibilidades(servico, dto.getServicoDisponibilidadeCreateDTOList());
+        List<ServicoImagem> imagens = salvarImagens(servico, dto.servicoImagemCreateDTOList());
+        List<ServicoDisponibilidade> disponibilidades = salvarDisponibilidades(servico, dto.servicoDisponibilidadeCreateDTOList());
 
         buscarServicosESalvarNoCache(profissional.getId());
         invalidarCacheDetalhes(profissional.getId());
@@ -100,8 +100,8 @@ public class ProfissionalService {
                     AreaAtendimento novaArea = new AreaAtendimento();
                     novaArea.setProfissional(profissional);
                     return novaArea;
-        });
-        AreaAtendimentoMapper.toUpdateEntity(areaAtendimento, profissionalUpdateDTO.getAreaAtendimentoUpdateDTO());
+                });
+        AreaAtendimentoMapper.toUpdateEntity(areaAtendimento, profissionalUpdateDTO.areaAtendimentoUpdateDTO());
         AreaAtendimento areaAtualizada = areaAtendimentoRepository.save(areaAtendimento);
         invalidarCacheDetalhes(profissional.getId());
         searchOutboxService.solicitarReindexacao(profissional.getId());
@@ -117,8 +117,8 @@ public class ProfissionalService {
         return servicoImagemRepository.saveAll(dtos.stream().map(dto -> {
             ServicoImagem imagem = new ServicoImagem();
             imagem.setServico(servico);
-            imagem.setUrl(dto.getUrl());
-            imagem.setOrdem(dto.getOrdem());
+            imagem.setUrl(dto.url());
+            imagem.setOrdem(dto.ordem());
             return imagem;
         }).toList());
     }
@@ -127,9 +127,9 @@ public class ProfissionalService {
         return servicoDisponibilidadeRepository.saveAll(dtos.stream().map(dto -> {
             ServicoDisponibilidade disponibilidade = new ServicoDisponibilidade();
             disponibilidade.setServico(servico);
-            disponibilidade.setDiaSemana(dto.getDiaSemana());
-            disponibilidade.setHrInicio(dto.getHrInicio());
-            disponibilidade.setHrFim(dto.getHrFim());
+            disponibilidade.setDiaSemana(dto.diaSemana());
+            disponibilidade.setHrInicio(dto.hrInicio());
+            disponibilidade.setHrFim(dto.hrFim());
             disponibilidade.setStAtivo(true);
             return disponibilidade;
         }).toList());

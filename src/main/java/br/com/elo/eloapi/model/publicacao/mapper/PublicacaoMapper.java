@@ -18,14 +18,14 @@ public final class PublicacaoMapper {
 
     public static Publicacao toEntity(PublicacaoCreateDTO dto) {
         Publicacao publicacao = new Publicacao();
-        publicacao.setDsPublicacao(dto.getDsPublicacao());
+        publicacao.setDsPublicacao(dto.dsPublicacao());
         publicacao.setDtPublicacao(LocalDateTime.now());
         publicacao.setStAtivo(true);
         return publicacao;
     }
 
     public static PublicacaoImagem toImageEntity(PublicacaoImagemDTO dto, Publicacao publicacao) {
-        return new PublicacaoImagem(null, publicacao, dto.getUrlImagem(), dto.getNrOrdem());
+        return new PublicacaoImagem(null, publicacao, dto.urlImagem(), dto.nrOrdem());
     }
 
     public static PublicacaoImagemRS toImageResponse(PublicacaoImagem imagem) {

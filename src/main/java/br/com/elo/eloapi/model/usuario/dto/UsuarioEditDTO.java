@@ -3,30 +3,24 @@ package br.com.elo.eloapi.model.usuario.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class UsuarioEditDTO {
+public record UsuarioEditDTO(
+        Long id,
 
-    private Long id;
+        @NotBlank
+        @Size(min = 3)
+        String nome,
 
-    @NotBlank
-    @Size(min = 3)
-    private String nome;
+        @NotBlank
+        String sobrenome,
 
-    @NotBlank
-    private String sobrenome;
+        @Email
+        String email,
 
-    @Email
-    private String email;
+        @NotBlank
+        String telContato,
 
-    @NotBlank
-    private String telContato;
-
-    @NotBlank
-    private String telContatoZap;
+        @NotBlank
+        String telContatoZap
+) {
 }

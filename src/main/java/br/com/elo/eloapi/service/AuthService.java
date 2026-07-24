@@ -60,19 +60,19 @@ public class AuthService {
 
     @Transactional
     public void createUser(UsuarioCreateDTO usuarioCreateDto) {
-        if (usuarioRepository.findByEmail(usuarioCreateDto.getEmail()).isPresent()) {
+        if (usuarioRepository.findByEmail(usuarioCreateDto.email()).isPresent()) {
             throw new ConflictException("Email já cadastrado!");
         }
 
         Usuario usuario = usuarioMapper.toEntity(usuarioCreateDto);
         usuario = usuarioRepository.save(usuario);
-        Profissional profissional = profissionalRepository.save(new Profissional(usuario, !usuarioCreateDto.getCadastroAcao().isCadastrarUsuario()));
+        Profissional profissional = profissionalRepository.save(new Profissional(usuario, !usuarioCreateDto.cadastroAcao().isCadastrarUsuario()));
         searchOutboxService.solicitarReindexacao(profissional.getId());
     }
 
     public LoginResponseDTO authenticate(LoginDTO loginDto) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getSenha()));
-        return buildLoginResponse(profissionalRepository.findByUsuarioEmail(loginDto.getEmail()).orElseThrow(() -> new ResourceNotFound("Usuário não encontrado!")), false, loginDto.getDeviceCode());
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDto.email(), loginDto.senha()));
+        return buildLoginResponse(profissionalRepository.findByUsuarioEmail(loginDto.email()).orElseThrow(() -> new ResourceNotFound("Usuário não encontrado!")), false, loginDto.deviceCode());
     }
 
     public LoginResponseDTO refresh(String token) {

@@ -17,16 +17,16 @@ public final class EnderecoMapper {
     public static Endereco toEntity(EnderecoCreateDTO dto) {
         Endereco endereco = new Endereco();
 
-        endereco.setId(dto.getId());
-        endereco.setNmApelido(dto.getNmApelido());
-        endereco.setNmRua(dto.getRua());
-        endereco.setNmComplemento(dto.getComplemento());
-        endereco.setNmBairro(dto.getBairro());
-        endereco.setNmCidade(dto.getCidade());
-        endereco.setNmEstado(dto.getEstado());
-        endereco.setNrCep(dto.getCep());
-        endereco.setTipoEndereco(TipoEndereco.buscarTipo(dto.getTipoEndereco()));
-        endereco.setNrRua(dto.getNrRua());
+        endereco.setId(dto.id());
+        endereco.setNmApelido(dto.nmApelido());
+        endereco.setNmRua(dto.rua());
+        endereco.setNmComplemento(dto.complemento());
+        endereco.setNmBairro(dto.bairro());
+        endereco.setNmCidade(dto.cidade());
+        endereco.setNmEstado(dto.estado());
+        endereco.setNrCep(dto.cep());
+        endereco.setTipoEndereco(TipoEndereco.buscarTipo(dto.tipoEndereco()));
+        endereco.setNrRua(dto.nrRua());
 
         return endereco;
     }

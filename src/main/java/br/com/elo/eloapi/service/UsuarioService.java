@@ -37,11 +37,11 @@ public class UsuarioService {
     public UsuarioRS editarPerfil(Usuario usuarioAutenticado, UsuarioEditDTO usuarioEditDTO) {
         Usuario usuario = usuarioRepository.findById(usuarioAutenticado.getId()).orElseThrow(() -> new ResourceNotFound("Usuário não encontrado"));
 
-        usuario.setNome(usuarioEditDTO.getNome());
-        usuario.setSobrenome(usuarioEditDTO.getSobrenome());
-        usuario.setEmail(usuarioEditDTO.getEmail());
-        usuario.setTelCelular(usuarioEditDTO.getTelContato());
-        usuario.setTelWhats(usuarioEditDTO.getTelContatoZap());
+        usuario.setNome(usuarioEditDTO.nome());
+        usuario.setSobrenome(usuarioEditDTO.sobrenome());
+        usuario.setEmail(usuarioEditDTO.email());
+        usuario.setTelCelular(usuarioEditDTO.telContato());
+        usuario.setTelWhats(usuarioEditDTO.telContatoZap());
 
         usuario = usuarioRepository.save(usuario);
         invalidarCacheDetalhes(usuario.getId());
@@ -57,7 +57,7 @@ public class UsuarioService {
     public EnderecoRS salvarEndereco(Usuario usuario, EnderecoCreateDTO enderecoCreateDTO) {
         Endereco endereco = EnderecoMapper.toEntity(enderecoCreateDTO);
 
-        Coordenadas coordenadas = awesomeApiCepClient.buscarCoordenadas(enderecoCreateDTO.getCep());
+        Coordenadas coordenadas = awesomeApiCepClient.buscarCoordenadas(enderecoCreateDTO.cep());
 
         if (!enderecoRepository.existsEnderecoByUsuarioId(usuario.getId())) {
             endereco.setStPrincipal(true);

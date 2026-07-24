@@ -21,15 +21,15 @@ public final class ServicoMapper {
         Servico servico = new Servico();
         CategoriaEspecifica categoriaEspecifica = new CategoriaEspecifica();
 
-        categoriaEspecifica.setId(dto.getIdCategoriaEspecifica());
+        categoriaEspecifica.setId(dto.idCategoriaEspecifica());
 
-        servico.setId(dto.getId());
+        servico.setId(dto.id());
         servico.setCategoriaEspecifica(categoriaEspecifica);
-        servico.setDsDescricao(dto.getDsDescricao());
-        servico.setVlServico(dto.getVlServico());
-        servico.setTempoExperiencia(dto.getTempoExperiencia());
-        servico.setDsTag(dto.getDsTag());
-        servico.setTipoServico(TipoServico.buscarTipo(dto.getTpExecucao()));
+        servico.setDsDescricao(dto.dsDescricao());
+        servico.setVlServico(dto.vlServico());
+        servico.setTempoExperiencia(dto.tempoExperiencia());
+        servico.setDsTag(dto.dsTag());
+        servico.setTipoServico(TipoServico.buscarTipo(dto.tpExecucao()));
 
         return servico;
     }

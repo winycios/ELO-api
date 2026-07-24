@@ -123,11 +123,11 @@ public class VitrineService {
         Profissional profissional = profissionalRepository.findById(usuario.getId()).orElseThrow(() -> new ResourceNotFound("Profissional não encontrado"));
 
         publicacao.setProfissional(profissional);
-        publicacao.setCategoriaEspecifica(categoriaEspecificaRepository.findById(publicacaoCreateDTO.getIdCategoriaEspecifica()).orElseThrow(() -> new ResourceNotFound("Categoria específica não encontrada")));
+        publicacao.setCategoriaEspecifica(categoriaEspecificaRepository.findById(publicacaoCreateDTO.idCategoriaEspecifica()).orElseThrow(() -> new ResourceNotFound("Categoria específica não encontrada")));
         publicacao = publicacaoRepository.save(publicacao);
 
         Publicacao finalPublicacao = publicacao;
-        List<PublicacaoImagem> imagens = imagemRepository.saveAll(publicacaoCreateDTO.getPublicacaoImagemDTOList().stream().map(image -> PublicacaoMapper.toImageEntity(image, finalPublicacao)).toList());
+        List<PublicacaoImagem> imagens = imagemRepository.saveAll(publicacaoCreateDTO.publicacaoImagemDTOList().stream().map(image -> PublicacaoMapper.toImageEntity(image, finalPublicacao)).toList());
 
         Map<Long, List<PublicacaoImagemRS>> imagensPorPublicacao = Map.of(publicacao.getId(), imagens.stream().map(PublicacaoMapper::toImageResponse).toList());
         return PublicacaoMapper.toFeedResponse(publicacao, imagensPorPublicacao, Map.of(), Map.of());

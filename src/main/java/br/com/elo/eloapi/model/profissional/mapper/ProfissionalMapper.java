@@ -14,9 +14,9 @@ public final class ProfissionalMapper {
 
     public static void toUpdateEntity(Profissional profissional, ProfissionalUpdateDTO dto) {
 
-        profissional.setDsApresentacao(dto.getApresentacao());
-        profissional.setUriPerfil(dto.getUriPerfil());
-        profissional.setDsEspecialidades(dto.getEspecialidades());
+        profissional.setDsApresentacao(dto.apresentacao());
+        profissional.setUriPerfil(dto.uriPerfil());
+        profissional.setDsEspecialidades(dto.especialidades());
     }
 
     public static Profissional toEntity(ProfissionalUpdateDTO dto) {

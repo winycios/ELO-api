@@ -20,17 +20,17 @@ public final class UsuarioMapper {
 
     public Usuario toEntity(UsuarioCreateDTO dto) {
         Usuario usuario = new Usuario();
-        usuario.setNome(dto.getNome());
-        usuario.setSobrenome(dto.getSobrenome());
-        usuario.setEmail(dto.getEmail());
-        usuario.setTelCelular(dto.getTelContato());
-        if (dto.getIsDuplicarTel()) {
-            usuario.setTelWhats(dto.getTelContato());
+        usuario.setNome(dto.nome());
+        usuario.setSobrenome(dto.sobrenome());
+        usuario.setEmail(dto.email());
+        usuario.setTelCelular(dto.telContato());
+        if (dto.isDuplicarTel()) {
+            usuario.setTelWhats(dto.telContato());
         }
 
-        usuario.setStHabilitado(!dto.getCadastroAcao().isCadastrarProfissional());
+        usuario.setStHabilitado(!dto.cadastroAcao().isCadastrarProfissional());
 
-        usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
+        usuario.setSenha(passwordEncoder.encode(dto.senha()));
         return usuario;
     }
 }

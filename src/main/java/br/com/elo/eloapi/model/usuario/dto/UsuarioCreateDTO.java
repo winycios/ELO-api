@@ -4,35 +4,29 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class UsuarioCreateDTO {
+public record UsuarioCreateDTO(
+        @NotBlank
+        @Size(min = 3)
+        String nome,
 
-    @NotBlank
-    @Size(min = 3)
-    private String nome;
+        @NotBlank
+        String sobrenome,
 
-    @NotBlank
-    private String sobrenome;
+        @Email
+        String email,
 
-    @Email
-    private String email;
+        @NotBlank
+        String telContato,
 
-    @NotBlank
-    private String telContato;
+        @NotBlank
+        @Size(min = 8, max = 20)
+        String senha,
 
-    @NotBlank
-    @Size(min = 8, max = 20)
-    private String senha;
+        @NotNull
+        Boolean isDuplicarTel,
 
-    @NotNull
-    private Boolean isDuplicarTel;
-
-    @NotNull
-    private CadastroAcao cadastroAcao;
+        @NotNull
+        CadastroAcao cadastroAcao
+) {
 }

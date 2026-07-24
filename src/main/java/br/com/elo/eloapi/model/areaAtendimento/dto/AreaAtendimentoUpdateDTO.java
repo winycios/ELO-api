@@ -2,33 +2,21 @@ package br.com.elo.eloapi.model.areaAtendimento.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class AreaAtendimentoUpdateDTO {
+public record AreaAtendimentoUpdateDTO(
+        Long id,
 
-    private Long id;
+        @NotNull Double nrLatitude,
 
-    @NotNull
-    private Double nrLatitude;
+        @NotNull Double nrLongitude,
 
-    @NotNull
-    private Double nrLongitude;
+        @NotNull Integer nrRaio,
 
-    @NotNull
-    private Integer nrRaio;
+        @NotBlank String nmCidade,
 
-    @NotBlank
-    private String nmCidade;
+        @NotBlank String nmEstado,
 
-    @NotBlank
-    private String nmEstado;
-
-    @NotBlank
-    private String nmBairro;
+        @NotBlank String nmBairro
+) {
 }
 

@@ -12,12 +12,12 @@ public final class AreaAtendimentoMapper {
 
     public static void toUpdateEntity(AreaAtendimento areaAtendimento, AreaAtendimentoUpdateDTO dto) {
 
-        areaAtendimento.setNmBairro(dto.getNmBairro());
-        areaAtendimento.setNrLatitude(dto.getNrLatitude());
-        areaAtendimento.setNrLongitude(dto.getNrLongitude());
-        areaAtendimento.setNrRaio(dto.getNrRaio());
-        areaAtendimento.setNmCidade(dto.getNmCidade());
-        areaAtendimento.setNmEstado(dto.getNmEstado());
+        areaAtendimento.setNmBairro(dto.nmBairro());
+        areaAtendimento.setNrLatitude(dto.nrLatitude());
+        areaAtendimento.setNrLongitude(dto.nrLongitude());
+        areaAtendimento.setNrRaio(dto.nrRaio());
+        areaAtendimento.setNmCidade(dto.nmCidade());
+        areaAtendimento.setNmEstado(dto.nmEstado());
     }
 
 

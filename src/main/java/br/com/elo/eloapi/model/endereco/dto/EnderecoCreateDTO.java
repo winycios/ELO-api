@@ -3,41 +3,28 @@ package br.com.elo.eloapi.model.endereco.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class EnderecoCreateDTO {
+public record EnderecoCreateDTO(
 
-    private Long id;
+        Long id,
 
-    @NotBlank
-    @Size(min = 3)
-    private String nmApelido;
+        @NotBlank
+        @Size(min = 3) String nmApelido,
 
-    @NotBlank
-    private String tipoEndereco;
+        @NotBlank String tipoEndereco,
 
-    @NotBlank
-    private String cep;
+        @NotBlank String cep,
 
-    @NotBlank
-    private String rua;
+        @NotBlank String rua,
 
-    @NotNull
-    private Integer nrRua;
+        @NotNull Integer nrRua,
 
-    private String complemento;
+        String complemento,
 
-    @NotBlank
-    private String bairro;
+        @NotBlank String bairro,
 
-    @NotBlank
-    private String cidade;
+        @NotBlank String cidade,
 
-    @NotBlank
-    private String estado;
+        @NotBlank String estado
+) {
 }

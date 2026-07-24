@@ -2,41 +2,28 @@ package br.com.elo.eloapi.model.servico.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class ServicoCreateDTO {
+public record ServicoCreateDTO(
 
-    private Long id;
+        Long id,
 
-    @NotNull
-    private Long idCategoriaEspecifica;
+        @NotNull Long idCategoriaEspecifica,
 
-    @NotBlank
-    private String dsDescricao;
+        @NotBlank String dsDescricao,
 
-    @NotNull
-    private Double vlServico;
+        @NotNull Double vlServico,
 
-    @NotBlank
-    private String dsTag;
+        @NotBlank String dsTag,
 
-    @NotNull
-    private Integer tempoExperiencia;
+        @NotNull Integer tempoExperiencia,
 
-    @NotBlank
-    private String tpExecucao;
+        @NotBlank String tpExecucao,
 
-   @NotNull
-    private List<ServicoDisponibilidadeCreateDTO> servicoDisponibilidadeCreateDTOList;
+        @NotNull List<ServicoDisponibilidadeCreateDTO> servicoDisponibilidadeCreateDTOList,
 
-    @NotNull
-    private List<ServicoImagemCreateDTO> servicoImagemCreateDTOList;
+        @NotNull List<ServicoImagemCreateDTO> servicoImagemCreateDTOList
+) {
 }
 
