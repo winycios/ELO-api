@@ -19,7 +19,6 @@ public record OrcamentoCreateRQ(
         @Size(max = 100)
         String descricao,
 
-        @NotNull
         @Size(max = 3)
         List<@NotBlank @Size(max = 500) String> orcamentoImagemCreateRQList,
 
