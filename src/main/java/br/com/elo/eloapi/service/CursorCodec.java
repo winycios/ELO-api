@@ -14,8 +14,11 @@ public class CursorCodec {
 
     public String encode(LocalDateTime data, Long id) {
         String value = data + "|" + id;
-        return Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(value.getBytes(StandardCharsets.UTF_8));
+        return encodeValue(value);
+    }
+
+    public String encodeId(Long id) {
+        return encodeValue("id|" + id);
     }
 
     public CursorValue decode(String cursor) {
@@ -33,5 +36,34 @@ public class CursorCodec {
         } catch (IllegalArgumentException exception) {
             throw new BadRequestException("Cursor inválido.");
         }
+    }
+
+    public Long decodeId(String cursor) {
+        if (cursor == null || cursor.isBlank()) {
+            return null;
+        }
+
+        try {
+            String value = decodeValue(cursor);
+            String[] parts = value.split("\\|", 2);
+            if (parts.length != 2 || !parts[0].equals("id")) {
+                throw new IllegalArgumentException();
+            }
+            long id = Long.parseLong(parts[1]);
+            if (id <= 0) {
+                throw new IllegalArgumentException();
+            }
+            return id;
+        } catch (IllegalArgumentException exception) {
+            throw new BadRequestException("Cursor inválido.");
+        }
+    }
+
+    private String encodeValue(String value) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String decodeValue(String cursor) {
+        return new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8);
     }
 }

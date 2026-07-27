@@ -5,14 +5,18 @@ import br.com.elo.eloapi.exception.ConflictException;
 import br.com.elo.eloapi.exception.ResourceNotFound;
 import br.com.elo.eloapi.model.endereco.Endereco;
 import br.com.elo.eloapi.model.orcamento.Orcamento;
+import br.com.elo.eloapi.model.orcamento.OrcamentoCusto;
 import br.com.elo.eloapi.model.orcamento.OrcamentoEndereco;
 import br.com.elo.eloapi.model.orcamento.OrcamentoImagem;
 import br.com.elo.eloapi.model.orcamento.dto.HorariosDisponiveisRS;
 import br.com.elo.eloapi.model.orcamento.dto.OrcamentoCreateRQ;
+import br.com.elo.eloapi.model.orcamento.dto.OrcamentoDetalheRS;
+import br.com.elo.eloapi.model.orcamento.dto.OrcamentoListagemRS;
 import br.com.elo.eloapi.model.orcamento.dto.OrcamentoRS;
 import br.com.elo.eloapi.model.orcamento.mapper.OrcamentoMapper;
 import br.com.elo.eloapi.model.orcamentoStatus.OrcamentoStatus;
 import br.com.elo.eloapi.model.orcamentoStatus.TipoOrcamentoStatus;
+import br.com.elo.eloapi.model.publicacao.dto.CursorPageRS;
 import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
 import br.com.elo.eloapi.model.servico.TipoServico;
@@ -21,6 +25,7 @@ import br.com.elo.eloapi.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,8 +52,10 @@ public class OrcamentoService {
     private final OrcamentoStatusRepository orcamentoStatusRepository;
     private final OrcamentoImagemRepository orcamentoImagemRepository;
     private final OrcamentoEnderecoRepository orcamentoEnderecoRepository;
+    private final OrcamentoCustoRepository orcamentoCustoRepository;
     private final EnderecoRepository enderecoRepository;
     private final RedisStore redisStore;
+    private final CursorCodec cursorCodec;
 
     @Transactional(readOnly = true)
     public HorariosDisponiveisRS buscarHorariosDisponiveis(Long servicoId, LocalDate dataReferencia) {
@@ -88,6 +95,28 @@ public class OrcamentoService {
         List<OrcamentoImagem> imagens = orcamentoImagemRepository.saveAll(dto.orcamentoImagemCreateRQList().stream().map(url -> OrcamentoMapper.toImagemEntity(url, orcamento)).toList());
 
         return OrcamentoMapper.toResponse(orcamento, imagens, enderecoSnapshot);
+    }
+
+    @Transactional(readOnly = true)
+    public CursorPageRS<OrcamentoListagemRS> listarOrcamentos(Usuario cliente, String filtroStatus, String cursor, int tamanho) {
+        TipoOrcamentoStatus status = buscarStatusDoFiltro(filtroStatus);
+        Long cursorId = cursorCodec.decodeId(cursor);
+        List<Orcamento> encontrados = orcamentoRepository.listarPorCliente(cliente.getId(), status, cursorId, PageRequest.of(0, tamanho + 1));
+        boolean hasNext = encontrados.size() > tamanho;
+        List<Orcamento> pagina = encontrados.stream().limit(tamanho).toList();
+        String nextCursor = hasNext ? cursorCodec.encodeId(pagina.getLast().getId()) : null;
+
+        return new CursorPageRS<>(pagina.stream().map(OrcamentoMapper::toListagemResponse).toList(), nextCursor, hasNext);
+    }
+
+    @Transactional(readOnly = true)
+    public OrcamentoDetalheRS buscarOrcamentoPorId(Usuario cliente, Long orcamentoId) {
+        Orcamento orcamento = orcamentoRepository.findByIdAndUsuarioId(orcamentoId, cliente.getId()).orElseThrow(() -> new ResourceNotFound("Orçamento não encontrado."));
+        List<OrcamentoImagem> imagens = orcamentoImagemRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
+        OrcamentoEndereco endereco = orcamentoEnderecoRepository.findFirstByOrcamentoIdOrderByIdAsc(orcamentoId).orElse(null);
+        List<OrcamentoCusto> custos = orcamentoCustoRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
+
+        return OrcamentoMapper.toDetalheResponse(orcamento, imagens, endereco, custos);
     }
 
     private HorariosDisponiveisRS calcularHorariosDisponiveis(Servico servico, LocalDate inicioSemana, LocalDateTime agora) {
@@ -187,6 +216,21 @@ public class OrcamentoService {
         }
 
         return enderecoRepository.findByIdAndUsuarioIdAndStAtivoTrue(enderecoId, cliente.getId()).orElseThrow(() -> new ResourceNotFound("Endereço ativo não encontrado para este usuário."));
+    }
+
+    private TipoOrcamentoStatus buscarStatusDoFiltro(String filtroStatus) {
+        if (filtroStatus == null || filtroStatus.isBlank() || filtroStatus.equalsIgnoreCase("todos")) {
+            return null;
+        }
+
+        try {
+            return TipoOrcamentoStatus.buscarTipo(filtroStatus);
+        } catch (IllegalArgumentException exception) {
+            String statusValidos = Arrays.stream(TipoOrcamentoStatus.values())
+                    .map(TipoOrcamentoStatus::getDescricao)
+                    .collect(Collectors.joining(", "));
+            throw new BadRequestException("Status inválido. Valores aceitos: " + statusValidos + ".");
+        }
     }
 
     private HorariosDisponiveisRS buscarHorariosNoCache(String cacheKey) {

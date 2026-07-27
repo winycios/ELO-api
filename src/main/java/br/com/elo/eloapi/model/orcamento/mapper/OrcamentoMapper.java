@@ -2,11 +2,16 @@ package br.com.elo.eloapi.model.orcamento.mapper;
 
 import br.com.elo.eloapi.model.endereco.Endereco;
 import br.com.elo.eloapi.model.orcamento.Orcamento;
+import br.com.elo.eloapi.model.orcamento.OrcamentoCusto;
 import br.com.elo.eloapi.model.orcamento.OrcamentoEndereco;
 import br.com.elo.eloapi.model.orcamento.OrcamentoImagem;
 import br.com.elo.eloapi.model.orcamento.dto.OrcamentoCreateRQ;
+import br.com.elo.eloapi.model.orcamento.dto.OrcamentoDetalheRS;
+import br.com.elo.eloapi.model.orcamento.dto.OrcamentoListagemRS;
 import br.com.elo.eloapi.model.orcamento.dto.OrcamentoRS;
 import br.com.elo.eloapi.model.orcamentoStatus.OrcamentoStatus;
+import br.com.elo.eloapi.model.orcamentoStatus.TipoOrcamentoStatus;
+import br.com.elo.eloapi.model.profissional.Profissional;
 import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import org.springframework.stereotype.Component;
@@ -70,6 +75,103 @@ public final class OrcamentoMapper {
                 orcamento.getDtFimProposto(),
                 imagens.stream().map(OrcamentoImagem::getUrl).toList(),
                 endereco == null ? null : toEnderecoResponse(endereco)
+        );
+    }
+
+    public static OrcamentoListagemRS toListagemResponse(Orcamento orcamento) {
+        Servico servico = orcamento.getServico();
+        Profissional profissional = servico.getProfissional();
+        Usuario usuarioProfissional = profissional.getUsuario();
+        TipoOrcamentoStatus status = orcamento.getOrcamentoStatus().getTipoOrcamentoStatus();
+        String fotoProfissional = profissional.getUriPerfil() != null ? profissional.getUriPerfil() : usuarioProfissional.getUriPerfil();
+
+        return new OrcamentoListagemRS(
+                orcamento.getId(),
+                servico.getId(),
+                profissional.getId(),
+                status.isOrcamentoFinal() ? orcamento.getId() : null,
+                usuarioProfissional.nomeCompleto(),
+                fotoProfissional,
+                servico.getCategoriaEspecifica().getNmCategoria(),
+                orcamento.getDsDescricao(),
+                status.getDescricao()
+        );
+    }
+
+    public static OrcamentoDetalheRS toDetalheResponse(Orcamento orcamento, List<OrcamentoImagem> imagens, OrcamentoEndereco endereco, List<OrcamentoCusto> custos) {
+        Servico servico = orcamento.getServico();
+        Profissional profissional = servico.getProfissional();
+        Usuario usuarioProfissional = profissional.getUsuario();
+        TipoOrcamentoStatus status = orcamento.getOrcamentoStatus().getTipoOrcamentoStatus();
+        String fotoProfissional = profissional.getUriPerfil() != null ? profissional.getUriPerfil() : usuarioProfissional.getUriPerfil();
+
+        double valorCustos = custos.stream().map(OrcamentoCusto::getVl_valor).filter(java.util.Objects::nonNull).mapToDouble(Double::doubleValue).sum();
+
+        Double valorExibicao = custos.isEmpty() ? servico.getVlServico() : valorCustos;
+
+        OrcamentoDetalheRS.ProfissionalOrcamentoRS profissionalResponse =
+                new OrcamentoDetalheRS.ProfissionalOrcamentoRS(
+                        profissional.getId(),
+                        usuarioProfissional.nomeCompleto(),
+                        fotoProfissional,
+                        servico.getCategoriaEspecifica().getNmCategoria(),
+                        usuarioProfissional.getQtAvaliacaoGeral(),
+                        usuarioProfissional.getQtAvalicaoes(),
+                        Boolean.TRUE.equals(profissional.getStHabilitado())
+                                && Boolean.TRUE.equals(usuarioProfissional.getStHabilitado()),
+                        new OrcamentoDetalheRS.ContatoProfissionalRS(
+                                usuarioProfissional.getTelCelular(),
+                                usuarioProfissional.getTelWhats()
+                        )
+                );
+
+        OrcamentoDetalheRS.SolicitacaoOrcamentoRS solicitacaoResponse =
+                new OrcamentoDetalheRS.SolicitacaoOrcamentoRS(
+                        servico.getId(),
+                        servico.getCategoriaEspecifica().getId(),
+                        servico.getCategoriaEspecifica().getNmCategoria(),
+                        orcamento.getDsDescricao(),
+                        servico.getTipoServico() == null
+                                ? null
+                                : servico.getTipoServico().getTipoServico(),
+                        orcamento.getDtPreferidoSolicitado(),
+                        valorExibicao,
+                        imagens.stream().map(OrcamentoImagem::getUrl).toList(),
+                        endereco == null ? null : toDetalheEnderecoResponse(endereco)
+                );
+
+        OrcamentoDetalheRS.OrcamentoFinalRS orcamentoFinalResponse = null;
+        if (status.isOrcamentoFinal()) {
+            orcamentoFinalResponse = new OrcamentoDetalheRS.OrcamentoFinalRS(
+                    orcamento.getId(),
+                    orcamento.getDtInicioProposto(),
+                    orcamento.getDtFimProposto(),
+                    orcamento.getDsObservacaoProfissional(),
+                    custos.stream().map(custo -> new OrcamentoDetalheRS.CustoOrcamentoRS(custo.getId(), custo.getDsDescricao(), custo.getVl_valor())).toList(),
+                    valorCustos
+            );
+        }
+
+        return new OrcamentoDetalheRS(
+                orcamento.getId(),
+                status.getDescricao(),
+                profissionalResponse,
+                solicitacaoResponse,
+                orcamentoFinalResponse
+        );
+    }
+
+    private static OrcamentoDetalheRS.EnderecoOrcamentoRS toDetalheEnderecoResponse(OrcamentoEndereco endereco) {
+        return new OrcamentoDetalheRS.EnderecoOrcamentoRS(
+                endereco.getNmRua(),
+                endereco.getNrRua(),
+                endereco.getNmComplemento(),
+                endereco.getNmBairro(),
+                endereco.getNmCidade(),
+                endereco.getNmEstado(),
+                endereco.getNrCep(),
+                endereco.getNrLatitude(),
+                endereco.getNrLongitude()
         );
     }
 

@@ -225,6 +225,9 @@ CREATE INDEX `fk_Orcamento_Usuario1_idx` ON `database_elo`.`orcamento` (`fk_id_u
 
 CREATE INDEX `fk_Orcamento_Servico1_idx` ON `database_elo`.`orcamento` (`fk_id_servico` ASC) VISIBLE;
 
+CREATE INDEX `idx_orcamento_cliente_status_cursor` ON `database_elo`.`orcamento`
+    (`fk_id_usuario` ASC, `fk_id_orcamento_status` ASC, `id_orcamento` DESC) VISIBLE;
+
 CREATE INDEX `idx_orcamento_agenda` ON `database_elo`.`orcamento`
     (`fk_id_servico` ASC, `fk_id_orcamento_status` ASC, `dt_inicio_proposto` ASC, `dt_fim_proposto` ASC) VISIBLE;
 
