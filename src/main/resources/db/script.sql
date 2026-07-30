@@ -199,6 +199,7 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento`
     `dt_preferido_solicitado`    DATETIME     NOT NULL,
     `dt_inicio_proposto`         DATETIME     NULL DEFAULT NULL,
     `dt_fim_proposto`            DATETIME     NULL DEFAULT NULL,
+    `dt_criacao`                 DATETIME(3) NOT NULL
     PRIMARY KEY (`id_orcamento`),
     CONSTRAINT `ck_orcamento_intervalo_proposto`
     CHECK (
@@ -336,14 +337,14 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento_endereco`
     `nr_latitude`           DOUBLE      NULL DEFAULT NULL,
     `nr_longitude`          DOUBLE      NULL DEFAULT NULL,
     PRIMARY KEY (`id_orcamento_endereco`),
+    CONSTRAINT `uk_orcamento_endereco_orcamento`
+    UNIQUE (`fk_id_orcamento`),
     CONSTRAINT `fk_Orcamento_endereco_Orcamento1`
     FOREIGN KEY (`fk_id_orcamento`)
     REFERENCES `database_elo`.`orcamento` (`id_orcamento`)
     )
     ENGINE = InnoDB
     DEFAULT CHARACTER SET = utf8mb3;
-
-CREATE INDEX `fk_Orcamento_endereco_Orcamento1_idx` ON `database_elo`.`orcamento_endereco` (`fk_id_orcamento` ASC) VISIBLE;
 
 
 -- -----------------------------------------------------

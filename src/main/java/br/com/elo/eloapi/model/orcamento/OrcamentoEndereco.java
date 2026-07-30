@@ -27,8 +27,8 @@ public class OrcamentoEndereco implements Serializable {
     @Column(name = "id_orcamento_endereco")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_id_orcamento", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_id_orcamento", nullable = false, unique = true)
     private Orcamento orcamento;
 
     @Column(name = "nm_rua")

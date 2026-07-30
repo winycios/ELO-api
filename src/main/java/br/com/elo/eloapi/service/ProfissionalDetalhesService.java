@@ -24,12 +24,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static br.com.elo.eloapi.Util.Utils.calcularDistancia;
+
 @Service
 @RequiredArgsConstructor
 public class ProfissionalDetalhesService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProfissionalDetalhesService.class);
-    private static final double RAIO_TERRA_KM = 6_371.0088;
 
     private final ServicoRepository servicoRepository;
     private final ServicoImagemRepository servicoImagemRepository;
@@ -53,7 +54,9 @@ public class ProfissionalDetalhesService {
             salvarNoCache(cacheKey, detalhes);
         }
 
-        return profissionalServicoMapper.comDistancia(detalhes, calcularDistancia(usuario, profissionalId));
+        Endereco origem = enderecoRepository.findByUsuarioIdAndStPrincipalTrue(usuario.getId()).orElse(null);
+        AreaAtendimento destino = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissionalId).orElse(null);
+        return profissionalServicoMapper.comDistancia(detalhes, calcularDistancia(usuario, destino, origem));
     }
 
     @Transactional(readOnly = true)
@@ -116,40 +119,6 @@ public class ProfissionalDetalhesService {
         }
     }
 
-    private Double calcularDistancia(Usuario usuario, Long profissionalId) {
-        if (usuario == null || usuario.getId() == null) {
-            return null;
-        }
-
-        Endereco origem = enderecoRepository.findByUsuarioIdAndStPrincipalTrue(usuario.getId()).orElse(null);
-        AreaAtendimento destino = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissionalId).orElse(null);
-        if (!possuiCoordenadas(origem) || !possuiCoordenadas(destino)) {
-            return null;
-        }
-
-        double latitudeOrigem = Math.toRadians(origem.getNrLatitude());
-        double latitudeDestino = Math.toRadians(destino.getNrLatitude());
-        double diferencaLatitude = latitudeDestino - latitudeOrigem;
-        double diferencaLongitude = Math.toRadians(destino.getNrLongitude() - origem.getNrLongitude());
-        double haversine = Math.pow(Math.sin(diferencaLatitude / 2), 2)
-                + Math.cos(latitudeOrigem)
-                * Math.cos(latitudeDestino)
-                * Math.pow(Math.sin(diferencaLongitude / 2), 2);
-        double distanciaKm = 2 * RAIO_TERRA_KM * Math.asin(Math.sqrt(haversine));
-        return Math.round(distanciaKm * 10.0) / 10.0;
-    }
-
-    private boolean possuiCoordenadas(Endereco endereco) {
-        return endereco != null && coordenadasValidas(endereco.getNrLatitude(), endereco.getNrLongitude());
-    }
-
-    private boolean possuiCoordenadas(AreaAtendimento area) {
-        return area != null && coordenadasValidas(area.getNrLatitude(), area.getNrLongitude());
-    }
-
-    private boolean coordenadasValidas(Double latitude, Double longitude) {
-        return latitude != null && longitude != null && Double.isFinite(latitude) && Double.isFinite(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
-    }
 
     private Double calcularPercentualPositivas(long quantidade, long positivas) {
         if (quantidade == 0) {

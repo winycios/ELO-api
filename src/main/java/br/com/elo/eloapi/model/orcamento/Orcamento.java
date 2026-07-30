@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -41,6 +42,9 @@ public class Orcamento implements Serializable {
     @JoinColumn(name = "fk_id_orcamento_status", nullable = false)
     private OrcamentoStatus orcamentoStatus;
 
+    @OneToOne(mappedBy = "orcamento", fetch = FetchType.LAZY)
+    private OrcamentoEndereco endereco;
+
     @Column(name = "ds_descricao", nullable = false, length = 100)
     private String dsDescricao;
 
@@ -55,4 +59,7 @@ public class Orcamento implements Serializable {
 
     @Column(name = "dt_fim_proposto")
     private LocalDateTime dtFimProposto;
-}
+
+    @CreationTimestamp
+    @Column(updatable = false, name = "dt_criacao")
+    private LocalDateTime dtCriacao;}

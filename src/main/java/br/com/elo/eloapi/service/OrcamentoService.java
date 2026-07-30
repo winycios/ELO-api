@@ -3,16 +3,13 @@ package br.com.elo.eloapi.service;
 import br.com.elo.eloapi.exception.BadRequestException;
 import br.com.elo.eloapi.exception.ConflictException;
 import br.com.elo.eloapi.exception.ResourceNotFound;
+import br.com.elo.eloapi.model.areaAtendimento.AreaAtendimento;
 import br.com.elo.eloapi.model.endereco.Endereco;
 import br.com.elo.eloapi.model.orcamento.Orcamento;
 import br.com.elo.eloapi.model.orcamento.OrcamentoCusto;
 import br.com.elo.eloapi.model.orcamento.OrcamentoEndereco;
 import br.com.elo.eloapi.model.orcamento.OrcamentoImagem;
-import br.com.elo.eloapi.model.orcamento.dto.HorariosDisponiveisRS;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoCreateRQ;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoDetalheRS;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoListagemRS;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoRS;
+import br.com.elo.eloapi.model.orcamento.dto.*;
 import br.com.elo.eloapi.model.orcamento.mapper.OrcamentoMapper;
 import br.com.elo.eloapi.model.orcamentoStatus.OrcamentoStatus;
 import br.com.elo.eloapi.model.orcamentoStatus.TipoOrcamentoStatus;
@@ -26,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +54,7 @@ public class OrcamentoService {
     private final EnderecoRepository enderecoRepository;
     private final RedisStore redisStore;
     private final CursorCodec cursorCodec;
+    private final AreaAtendimentoRepository areaAtendimentoRepository;
 
     @Transactional(readOnly = true)
     public HorariosDisponiveisRS buscarHorariosDisponiveis(Long servicoId, LocalDate dataReferencia) {
@@ -90,7 +89,7 @@ public class OrcamentoService {
 
         Orcamento orcamento = orcamentoRepository.save(OrcamentoMapper.toEntity(dto, servico, cliente, statusPendente));
 
-        OrcamentoEndereco enderecoSnapshot = endereco == null ? null : orcamentoEnderecoRepository.save(OrcamentoMapper.toEnderecoEntity(endereco, orcamento));
+        OrcamentoEndereco enderecoSnapshot = endereco == null ? null : orcamentoEnderecoRepository.save(OrcamentoMapper.toOrcamentoEnderecoEntity(endereco, orcamento));
 
         List<OrcamentoImagem> imagens = orcamentoImagemRepository.saveAll(dto.orcamentoImagemCreateRQList().stream().map(url -> OrcamentoMapper.toImagemEntity(url, orcamento)).toList());
 
@@ -107,6 +106,19 @@ public class OrcamentoService {
         String nextCursor = hasNext ? cursorCodec.encodeId(pagina.getLast().getId()) : null;
 
         return new CursorPageRS<>(pagina.stream().map(OrcamentoMapper::toListagemResponse).toList(), nextCursor, hasNext);
+    }
+
+    @Transactional(readOnly = true)
+    public CursorPageRS<OrcamentoListagemProfissionalRS> listarOrcamentosProfissional(Usuario profissional, String filtroStatus, String cursor, int tamanho) {
+        TipoOrcamentoStatus status = buscarStatusDoFiltro(filtroStatus);
+        Long cursorId = cursorCodec.decodeId(cursor);
+        List<Orcamento> encontrados = orcamentoRepository.listarPorProfissional(profissional.getId(), status, cursorId, PageRequest.of(0, tamanho + 1));
+        boolean hasNext = encontrados.size() > tamanho;
+        List<Orcamento> pagina = encontrados.stream().limit(tamanho).toList();
+        String nextCursor = hasNext ? cursorCodec.encodeId(pagina.getLast().getId()) : null;
+        AreaAtendimento areaAtendimento = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissional.getId()).orElse(null);
+
+        return new CursorPageRS<>(pagina.stream().map(orcamento -> OrcamentoMapper.orcamentoListagemProfissionalResponse(orcamento, areaAtendimento)).toList(), nextCursor, hasNext);
     }
 
     @Transactional(readOnly = true)

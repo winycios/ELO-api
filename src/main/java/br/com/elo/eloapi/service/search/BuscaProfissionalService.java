@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import static br.com.elo.eloapi.Util.Utils.calculaDistancia;
+
 @Service
 @RequiredArgsConstructor
 public class BuscaProfissionalService {
@@ -232,11 +234,7 @@ public class BuscaProfissionalService {
         double latitudeOrigem = Math.toRadians(filtro.latitude());
         double latitudeDestino = Math.toRadians(localizacao.lat());
 
-        double haversine = Math.pow(Math.sin(deltaLatitude / 2), 2)
-                + Math.cos(latitudeOrigem) * Math.cos(latitudeDestino)
-                * Math.pow(Math.sin(deltaLongitude / 2), 2);
-        double distancia = 2 * raioTerraKm * Math.asin(Math.sqrt(haversine));
-        return Math.round(distancia * 10.0) / 10.0;
+        return calculaDistancia(latitudeOrigem, latitudeDestino, deltaLatitude, deltaLongitude, raioTerraKm);
     }
 
     private void validar(BuscaProfissionalFiltro filtro) {

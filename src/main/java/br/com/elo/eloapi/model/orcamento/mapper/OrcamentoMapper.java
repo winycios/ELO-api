@@ -1,14 +1,12 @@
 package br.com.elo.eloapi.model.orcamento.mapper;
 
+import br.com.elo.eloapi.model.areaAtendimento.AreaAtendimento;
 import br.com.elo.eloapi.model.endereco.Endereco;
 import br.com.elo.eloapi.model.orcamento.Orcamento;
 import br.com.elo.eloapi.model.orcamento.OrcamentoCusto;
 import br.com.elo.eloapi.model.orcamento.OrcamentoEndereco;
 import br.com.elo.eloapi.model.orcamento.OrcamentoImagem;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoCreateRQ;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoDetalheRS;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoListagemRS;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoRS;
+import br.com.elo.eloapi.model.orcamento.dto.*;
 import br.com.elo.eloapi.model.orcamentoStatus.OrcamentoStatus;
 import br.com.elo.eloapi.model.orcamentoStatus.TipoOrcamentoStatus;
 import br.com.elo.eloapi.model.profissional.Profissional;
@@ -17,6 +15,8 @@ import br.com.elo.eloapi.model.usuario.Usuario;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+
+import static br.com.elo.eloapi.Util.Utils.calcularDistancia;
 
 @Component
 public final class OrcamentoMapper {
@@ -43,9 +43,10 @@ public final class OrcamentoMapper {
         return new OrcamentoImagem(null, orcamento, url.trim());
     }
 
-    public static OrcamentoEndereco toEnderecoEntity(Endereco endereco, Orcamento orcamento) {
+    public static OrcamentoEndereco toOrcamentoEnderecoEntity(Endereco endereco, Orcamento orcamento) {
         OrcamentoEndereco snapshot = new OrcamentoEndereco();
         snapshot.setOrcamento(orcamento);
+        orcamento.setEndereco(snapshot);
         snapshot.setNmRua(endereco.getNmRua());
         snapshot.setNrRua(endereco.getNrRua());
         snapshot.setNmComplemento(endereco.getNmComplemento());
@@ -56,6 +57,21 @@ public final class OrcamentoMapper {
         snapshot.setNrLatitude(endereco.getNrLatitude());
         snapshot.setNrLongitude(endereco.getNrLongitude());
         return snapshot;
+    }
+
+    public static Endereco toEnderecoEntity(OrcamentoEndereco enderecoOrcamento) {
+        Endereco endereco = new Endereco();
+
+        endereco.setNmRua(enderecoOrcamento.getNmRua());
+        endereco.setNrRua(enderecoOrcamento.getNrRua());
+        endereco.setNmComplemento(enderecoOrcamento.getNmComplemento());
+        endereco.setNmBairro(enderecoOrcamento.getNmBairro());
+        endereco.setNmCidade(enderecoOrcamento.getNmCidade());
+        endereco.setNmEstado(enderecoOrcamento.getNmEstado());
+        endereco.setNrCep(enderecoOrcamento.getNrCep());
+        endereco.setNrLatitude(enderecoOrcamento.getNrLatitude());
+        endereco.setNrLongitude(enderecoOrcamento.getNrLongitude());
+        return endereco;
     }
 
     public static OrcamentoRS toResponse(
@@ -94,6 +110,27 @@ public final class OrcamentoMapper {
                 fotoProfissional,
                 servico.getCategoriaEspecifica().getNmCategoria(),
                 orcamento.getDsDescricao(),
+                status.getDescricao()
+        );
+    }
+
+    public static OrcamentoListagemProfissionalRS orcamentoListagemProfissionalResponse(Orcamento orcamento, AreaAtendimento areaAtendimento) {
+        Servico servico = orcamento.getServico();
+        Profissional profissional = servico.getProfissional();
+        Usuario usuarioProfissional = profissional.getUsuario();
+        TipoOrcamentoStatus status = orcamento.getOrcamentoStatus().getTipoOrcamentoStatus();
+        String fotoProfissional = profissional.getUriPerfil() != null ? profissional.getUriPerfil() : usuarioProfissional.getUriPerfil();
+
+        return new OrcamentoListagemProfissionalRS(
+                orcamento.getId(),
+                servico.getId(),
+                usuarioProfissional.nomeCompleto(),
+                fotoProfissional,
+                0.0,
+                servico.getCategoriaEspecifica().getNmCategoria(),
+                orcamento.getDsDescricao(),
+                calcularDistancia(orcamento.getUsuario(), areaAtendimento, toEnderecoEntity(orcamento.getEndereco())),
+                orcamento.getDtCriacao(),
                 status.getDescricao()
         );
     }

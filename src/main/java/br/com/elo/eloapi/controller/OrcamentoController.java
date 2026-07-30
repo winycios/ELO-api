@@ -1,10 +1,6 @@
 package br.com.elo.eloapi.controller;
 
-import br.com.elo.eloapi.model.orcamento.dto.HorariosDisponiveisRS;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoCreateRQ;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoDetalheRS;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoListagemRS;
-import br.com.elo.eloapi.model.orcamento.dto.OrcamentoRS;
+import br.com.elo.eloapi.model.orcamento.dto.*;
 import br.com.elo.eloapi.model.publicacao.dto.CursorPageRS;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.service.OrcamentoService;
@@ -38,6 +34,11 @@ public class OrcamentoController {
     @GetMapping("/listar")
     public ResponseEntity<CursorPageRS<OrcamentoListagemRS>> listarOrcamentos(@AuthenticationPrincipal Usuario usuario, @RequestParam(required = false) String status, @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer tamanho) {
         return ResponseEntity.ok(orcamentoService.listarOrcamentos(usuario, status, cursor, tamanho));
+    }
+
+    @GetMapping("/listarProfisisonal")
+    public ResponseEntity<CursorPageRS<OrcamentoListagemProfissionalRS>> listarOrcamentosProfissional(@AuthenticationPrincipal Usuario usuario, @RequestParam(required = false) String status, @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer tamanho) {
+        return ResponseEntity.ok(orcamentoService.listarOrcamentosProfissional(usuario, status, cursor, tamanho));
     }
 
     @GetMapping("/{orcamentoId}")
