@@ -54,8 +54,12 @@ public class ProfissionalDetalhesService {
             salvarNoCache(cacheKey, detalhes);
         }
 
-        Endereco origem = enderecoRepository.findByUsuarioIdAndStPrincipalTrue(usuario.getId()).orElse(null);
-        AreaAtendimento destino = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissionalId).orElse(null);
+        Endereco origem = null;
+        AreaAtendimento destino = null;
+        if (usuario != null) {
+            origem = enderecoRepository.findByUsuarioIdAndStPrincipalTrue(usuario.getId()).orElse(null);
+            destino = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissionalId).orElse(null);
+        }
         return profissionalServicoMapper.comDistancia(detalhes, calcularDistancia(usuario, destino, origem));
     }
 

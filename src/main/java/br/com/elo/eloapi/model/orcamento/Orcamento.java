@@ -77,6 +77,16 @@ public class Orcamento implements Serializable {
     @Column(name = "dt_fim_proposto")
     private LocalDateTime dtFimProposto;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_id_usuario_conclusao")
+    private Usuario usuarioConclusao;
+
+    @Column(name = "ds_observacao_conclusao", length = 200)
+    private String dsObservacaoConclusao;
+
+    @Column(name = "dt_conclusao")
+    private LocalDateTime dtConclusao;
+
     @CreationTimestamp
     @Column(updatable = false, name = "dt_criacao")
     private LocalDateTime dtCriacao;}

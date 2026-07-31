@@ -9,7 +9,8 @@ public record OrcamentoDetalheProfissionalRS(
         ClienteOrcamentoRS cliente,
         SolicitacaoOrcamentoRS solicitacao,
         OrcamentoFinalRS orcamentoFinal,
-        CancelamentoRS cancelamento
+        CancelamentoRS cancelamento,
+        ConclusaoRS conclusao
 ) {
 
     public record ClienteOrcamentoRS(
@@ -64,6 +65,13 @@ public record OrcamentoDetalheProfissionalRS(
             Long idUsuario,
             String motivo,
             String descricao,
+            LocalDateTime data
+    ) {
+    }
+
+    public record ConclusaoRS(
+            Long idProfissional,
+            String observacao,
             LocalDateTime data
     ) {
     }

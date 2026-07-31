@@ -10,7 +10,8 @@ public record OrcamentoListagemRS(
         String fotoProfissional,
         String categoria,
         String descricao,
-        String status
+        String status,
+        Boolean avaliado
 ) {
 }
 

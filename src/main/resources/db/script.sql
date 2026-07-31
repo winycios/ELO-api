@@ -194,17 +194,20 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento`
     `fk_id_servico`              INT          NOT NULL,
     `fk_id_usuario`              INT          NOT NULL,
     `fk_id_orcamento_status`     INT          NOT NULL,
-    `ds_descricao`               VARCHAR(100) NOT NULL,
+    `ds_descricao`               VARCHAR(100) NULL DEFAULT NULL,
     `ds_observacao_profissional` VARCHAR(200) NULL DEFAULT NULL,
     `tp_motivo_cancelamento`     VARCHAR(50)  NULL DEFAULT NULL,
     `ds_descricao_cancelamento`  VARCHAR(200) NULL DEFAULT NULL,
     `tp_autor_cancelamento`      VARCHAR(20)  NULL DEFAULT NULL,
     `fk_id_usuario_cancelamento` INT          NULL DEFAULT NULL,
     `dt_cancelamento`            DATETIME(3)  NULL DEFAULT NULL,
-    `dt_preferido_solicitado`    DATETIME     NOT NULL,
+    `fk_id_usuario_conclusao`    INT          NULL DEFAULT NULL,
+    `ds_observacao_conclusao`    VARCHAR(200) NULL DEFAULT NULL,
+    `dt_conclusao`               DATETIME(3)  NULL DEFAULT NULL,
+    `dt_preferido_solicitado`    DATETIME     NULL DEFAULT NULL,
     `dt_inicio_proposto`         DATETIME     NULL DEFAULT NULL,
     `dt_fim_proposto`            DATETIME     NULL DEFAULT NULL,
-    `dt_criacao`                 DATETIME(3) NOT NULL,
+    `dt_criacao`                 DATETIME     NULL DEFAULT NULL,
     PRIMARY KEY (`id_orcamento`),
     CONSTRAINT `ck_orcamento_intervalo_proposto`
     CHECK (
@@ -223,6 +226,9 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento`
     REFERENCES `database_elo`.`usuario` (`id_usuario`),
     CONSTRAINT `fk_Orcamento_Usuario_Cancelamento`
     FOREIGN KEY (`fk_id_usuario_cancelamento`)
+    REFERENCES `database_elo`.`usuario` (`id_usuario`),
+    CONSTRAINT `fk_Orcamento_Usuario_Conclusao`
+    FOREIGN KEY (`fk_id_usuario_conclusao`)
     REFERENCES `database_elo`.`usuario` (`id_usuario`)
     )
     ENGINE = InnoDB
@@ -239,6 +245,8 @@ CREATE INDEX `fk_Orcamento_Usuario_Cancelamento_idx` ON `database_elo`.`orcament
 CREATE INDEX `idx_orcamento_cliente_status_cursor` ON `database_elo`.`orcamento`
     (`fk_id_usuario` ASC, `fk_id_orcamento_status` ASC, `id_orcamento` DESC) VISIBLE;
 
+CREATE INDEX `fk_Orcamento_Usuario_Conclusao_idx` ON `database_elo`.`orcamento` (`fk_id_usuario_conclusao` ASC) VISIBLE;
+
 CREATE INDEX `idx_orcamento_agenda` ON `database_elo`.`orcamento`
     (`fk_id_servico` ASC, `fk_id_orcamento_status` ASC, `dt_inicio_proposto` ASC, `dt_fim_proposto` ASC) VISIBLE;
 
@@ -252,8 +260,9 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`avaliacao_reserva`
     `fk_id_reserva`           INT          NOT NULL,
     `fk_id_avaliador_usuario` INT          NOT NULL,
     `fk_id_usuario_avaliado`  INT          NOT NULL,
-    `qt_nota`                 TINYINT      NULL DEFAULT NULL,
+    `qt_nota`                 TINYINT      NOT NULL,
     `ds_comentario`           VARCHAR(200) NULL DEFAULT NULL,
+    `dt_criacao`              DATETIME     NULL DEFAULT NULL,
     `observacao_profisional`  VARCHAR(200) NULL DEFAULT NULL,
     `distancia`               DOUBLE       NULL DEFAULT NULL,
     `ds_endereco`             VARCHAR(45)  NULL DEFAULT NULL,
@@ -270,6 +279,8 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`avaliacao_reserva`
     )
     ENGINE = InnoDB
     DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE UNIQUE INDEX `uk_avaliacao_reserva_avaliador` ON `database_elo`.`avaliacao_reserva` (`fk_id_reserva` ASC, `fk_id_avaliador_usuario` ASC) VISIBLE;
 
 CREATE INDEX `fk_Avaliacao_Reserva_Reserva1_idx` ON `database_elo`.`avaliacao_reserva` (`fk_id_reserva` ASC) VISIBLE;
 
@@ -355,6 +366,8 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento_endereco`
     )
     ENGINE = InnoDB
     DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE INDEX `fk_Orcamento_endereco_Orcamento1_idx` ON `database_elo`.`orcamento_endereco` (`fk_id_orcamento` ASC) VISIBLE;
 
 
 -- -----------------------------------------------------
@@ -514,9 +527,9 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`servico_disponibilidade`
 (
     `id_servico_disponibilidade` INT      NOT NULL AUTO_INCREMENT,
     `fk_id_servico`              INT      NOT NULL,
-    `nr_dia_semana`              INT      NOT NULL,
-    `hr_inicio`                  TIME     NOT NULL,
-    `hr_fim`                     TIME     NOT NULL,
+    `nr_dia_semana`              INT      NULL DEFAULT NULL,
+    `hr_inicio`                  TIME     NULL DEFAULT NULL,
+    `hr_fim`                     TIME     NULL DEFAULT NULL,
     `st_ativo`                   TINYINT  NOT NULL DEFAULT 1,
     `dt_criacao`                 DATETIME NULL DEFAULT NULL,
     PRIMARY KEY (`id_servico_disponibilidade`),

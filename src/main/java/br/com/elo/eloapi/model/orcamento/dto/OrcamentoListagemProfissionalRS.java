@@ -16,6 +16,7 @@ public record OrcamentoListagemProfissionalRS(
         LocalDateTime inicioProposto,
         LocalDateTime fimProposto,
         Double valorTotal,
-        String status
+        String status,
+        Boolean avaliado
 ) {
 }

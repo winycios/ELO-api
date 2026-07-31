@@ -25,7 +25,8 @@ public interface OrcamentoRepository extends JpaRepository<Orcamento, Long> {
             "servico.categoriaEspecifica",
             "servico.categoriaEspecifica.categoriaGeral",
             "orcamentoStatus",
-            "usuarioCancelamento"
+            "usuarioCancelamento",
+            "usuarioConclusao"
     })
     Optional<Orcamento> findByIdAndUsuarioId(Long id, Long usuarioId);
 
@@ -38,7 +39,8 @@ public interface OrcamentoRepository extends JpaRepository<Orcamento, Long> {
             "servico.categoriaEspecifica.categoriaGeral",
             "orcamentoStatus",
             "endereco",
-            "usuarioCancelamento"
+            "usuarioCancelamento",
+            "usuarioConclusao"
     })
     Optional<Orcamento> findByIdAndServicoProfissionalId(Long id, Long profissionalId);
 

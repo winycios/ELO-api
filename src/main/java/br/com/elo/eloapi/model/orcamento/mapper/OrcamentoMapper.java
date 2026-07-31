@@ -99,7 +99,7 @@ public final class OrcamentoMapper {
         );
     }
 
-    public static OrcamentoListagemRS toListagemResponse(Orcamento orcamento) {
+    public static OrcamentoListagemRS toListagemResponse(Orcamento orcamento, boolean avaliado) {
         Servico servico = orcamento.getServico();
         Profissional profissional = servico.getProfissional();
         Usuario usuarioProfissional = profissional.getUsuario();
@@ -115,11 +115,17 @@ public final class OrcamentoMapper {
                 fotoProfissional,
                 servico.getCategoriaEspecifica().getNmCategoria(),
                 orcamento.getDsDescricao(),
-                status.getDescricao()
+                status.getDescricao(),
+                avaliado
         );
     }
 
-    public static OrcamentoListagemProfissionalRS orcamentoListagemProfissionalResponse(Orcamento orcamento, AreaAtendimento areaAtendimento, List<OrcamentoCusto> custos) {
+    public static OrcamentoListagemProfissionalRS orcamentoListagemProfissionalResponse(
+            Orcamento orcamento,
+            AreaAtendimento areaAtendimento,
+            List<OrcamentoCusto> custos,
+            boolean avaliado
+    ) {
         Servico servico = orcamento.getServico();
         Usuario cliente = orcamento.getUsuario();
         TipoOrcamentoStatus status = orcamento.getOrcamentoStatus().getTipoOrcamentoStatus();
@@ -138,7 +144,8 @@ public final class OrcamentoMapper {
                 orcamento.getDtInicioProposto(),
                 orcamento.getDtFimProposto(),
                 custos.isEmpty() ? null : somarCustos(custos),
-                status.getDescricao()
+                status.getDescricao(),
+                avaliado
         );
     }
 
@@ -208,16 +215,25 @@ public final class OrcamentoMapper {
                 orcamento.getMotivoCancelamento() == null
                         ? null
                         : new OrcamentoDetalheRS.CancelamentoRS(
-                                orcamento.getAutorCancelamento() == null
-                                        ? null
-                                        : orcamento.getAutorCancelamento().getDescricao(),
-                                orcamento.getUsuarioCancelamento() == null
-                                        ? null
-                                        : orcamento.getUsuarioCancelamento().getId(),
-                                orcamento.getMotivoCancelamento(),
-                                orcamento.getDsDescricaoCancelamento(),
-                                orcamento.getDtCancelamento()
-                        )
+                        orcamento.getAutorCancelamento() == null
+                        ? null
+                        : orcamento.getAutorCancelamento().getDescricao(),
+                        orcamento.getUsuarioCancelamento() == null
+                        ? null
+                        : orcamento.getUsuarioCancelamento().getId(),
+                        orcamento.getMotivoCancelamento(),
+                        orcamento.getDsDescricaoCancelamento(),
+                        orcamento.getDtCancelamento()
+                ),
+                orcamento.getDtConclusao() == null
+                        ? null
+                        : new OrcamentoDetalheRS.ConclusaoRS(
+                        orcamento.getUsuarioConclusao() == null
+                        ? null
+                        : orcamento.getUsuarioConclusao().getId(),
+                        orcamento.getDsObservacaoConclusao(),
+                        orcamento.getDtConclusao()
+                )
         );
     }
 
@@ -282,16 +298,25 @@ public final class OrcamentoMapper {
                 orcamento.getMotivoCancelamento() == null
                         ? null
                         : new OrcamentoDetalheProfissionalRS.CancelamentoRS(
-                                orcamento.getAutorCancelamento() == null
-                                        ? null
-                                        : orcamento.getAutorCancelamento().getDescricao(),
-                                orcamento.getUsuarioCancelamento() == null
-                                        ? null
-                                        : orcamento.getUsuarioCancelamento().getId(),
-                                orcamento.getMotivoCancelamento(),
-                                orcamento.getDsDescricaoCancelamento(),
-                                orcamento.getDtCancelamento()
-                        )
+                        orcamento.getAutorCancelamento() == null
+                        ? null
+                        : orcamento.getAutorCancelamento().getDescricao(),
+                        orcamento.getUsuarioCancelamento() == null
+                        ? null
+                        : orcamento.getUsuarioCancelamento().getId(),
+                        orcamento.getMotivoCancelamento(),
+                        orcamento.getDsDescricaoCancelamento(),
+                        orcamento.getDtCancelamento()
+                ),
+                orcamento.getDtConclusao() == null
+                        ? null
+                        : new OrcamentoDetalheProfissionalRS.ConclusaoRS(
+                        orcamento.getUsuarioConclusao() == null
+                        ? null
+                        : orcamento.getUsuarioConclusao().getId(),
+                        orcamento.getDsObservacaoConclusao(),
+                        orcamento.getDtConclusao()
+                )
         );
     }
 
