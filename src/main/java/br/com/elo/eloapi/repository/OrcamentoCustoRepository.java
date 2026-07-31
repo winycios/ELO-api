@@ -11,4 +11,6 @@ import java.util.List;
 public interface OrcamentoCustoRepository extends JpaRepository<OrcamentoCusto, Long> {
 
     List<OrcamentoCusto> findAllByOrcamentoIdOrderByIdAsc(Long orcamentoId);
+
+    List<OrcamentoCusto> findAllByOrcamentoIdInOrderByOrcamentoIdAscIdAsc(List<Long> orcamentoIds);
 }

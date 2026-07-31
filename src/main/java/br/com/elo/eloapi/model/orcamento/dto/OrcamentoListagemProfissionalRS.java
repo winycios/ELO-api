@@ -12,6 +12,10 @@ public record OrcamentoListagemProfissionalRS(
         String descricao,
         Double distanciaKm,
         LocalDateTime dataHoraCriacao,
+        LocalDateTime horarioPreferido,
+        LocalDateTime inicioProposto,
+        LocalDateTime fimProposto,
+        Double valorTotal,
         String status
 ) {
 }

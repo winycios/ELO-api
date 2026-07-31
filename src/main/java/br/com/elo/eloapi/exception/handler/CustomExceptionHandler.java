@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -45,6 +46,19 @@ public class CustomExceptionHandler {
 
         HttpStatus status = HttpStatus.BAD_REQUEST;
         ModelError err = new ModelError(Instant.now(), status.value(), "Erro de validação", errorResponse, request.getRequestURI());
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ModelError> exceptionPersonalized(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ModelError err = new ModelError(
+                Instant.now(),
+                status.value(),
+                "Erro de validação",
+                "O corpo da requisição está inválido.",
+                request.getRequestURI()
+        );
         return ResponseEntity.status(status).body(err);
     }
 

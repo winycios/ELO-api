@@ -10,7 +10,6 @@ import java.util.Arrays;
 public enum TipoOrcamentoStatus {
 
     PENDENTE("pendente"),
-    EM_ANDAMENTO("em_andamento"),
     ORCAMENTO_FINAL("orcamento_final"),
     APROVADO("aprovado"),
     CONCLUIDO("concluido"),
@@ -29,10 +28,6 @@ public enum TipoOrcamentoStatus {
 
     public boolean isPendente() {
         return this == PENDENTE;
-    }
-
-    public boolean isEmAndamento() {
-        return this == EM_ANDAMENTO;
     }
 
     public boolean isOrcamentoFinal() {

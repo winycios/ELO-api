@@ -15,6 +15,7 @@ import br.com.elo.eloapi.model.usuario.Usuario;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 import static br.com.elo.eloapi.Util.Utils.calcularDistancia;
 
@@ -60,6 +61,10 @@ public final class OrcamentoMapper {
     }
 
     public static Endereco toEnderecoEntity(OrcamentoEndereco enderecoOrcamento) {
+        if (enderecoOrcamento == null) {
+            return null;
+        }
+
         Endereco endereco = new Endereco();
 
         endereco.setNmRua(enderecoOrcamento.getNmRua());
@@ -105,7 +110,7 @@ public final class OrcamentoMapper {
                 orcamento.getId(),
                 servico.getId(),
                 profissional.getId(),
-                status.isOrcamentoFinal() ? orcamento.getId() : null,
+                possuiOrcamentoFinal(orcamento) ? orcamento.getId() : null,
                 usuarioProfissional.nomeCompleto(),
                 fotoProfissional,
                 servico.getCategoriaEspecifica().getNmCategoria(),
@@ -114,23 +119,25 @@ public final class OrcamentoMapper {
         );
     }
 
-    public static OrcamentoListagemProfissionalRS orcamentoListagemProfissionalResponse(Orcamento orcamento, AreaAtendimento areaAtendimento) {
+    public static OrcamentoListagemProfissionalRS orcamentoListagemProfissionalResponse(Orcamento orcamento, AreaAtendimento areaAtendimento, List<OrcamentoCusto> custos) {
         Servico servico = orcamento.getServico();
-        Profissional profissional = servico.getProfissional();
-        Usuario usuarioProfissional = profissional.getUsuario();
+        Usuario cliente = orcamento.getUsuario();
         TipoOrcamentoStatus status = orcamento.getOrcamentoStatus().getTipoOrcamentoStatus();
-        String fotoProfissional = profissional.getUriPerfil() != null ? profissional.getUriPerfil() : usuarioProfissional.getUriPerfil();
 
         return new OrcamentoListagemProfissionalRS(
                 orcamento.getId(),
                 servico.getId(),
-                usuarioProfissional.nomeCompleto(),
-                fotoProfissional,
-                0.0,
+                cliente.nomeCompleto(),
+                cliente.getUriPerfil(),
+                cliente.getQtAvaliacaoGeral(),
                 servico.getCategoriaEspecifica().getNmCategoria(),
                 orcamento.getDsDescricao(),
                 calcularDistancia(orcamento.getUsuario(), areaAtendimento, toEnderecoEntity(orcamento.getEndereco())),
                 orcamento.getDtCriacao(),
+                orcamento.getDtPreferidoSolicitado(),
+                orcamento.getDtInicioProposto(),
+                orcamento.getDtFimProposto(),
+                custos.isEmpty() ? null : somarCustos(custos),
                 status.getDescricao()
         );
     }
@@ -142,9 +149,12 @@ public final class OrcamentoMapper {
         TipoOrcamentoStatus status = orcamento.getOrcamentoStatus().getTipoOrcamentoStatus();
         String fotoProfissional = profissional.getUriPerfil() != null ? profissional.getUriPerfil() : usuarioProfissional.getUriPerfil();
 
-        double valorCustos = custos.stream().map(OrcamentoCusto::getVl_valor).filter(java.util.Objects::nonNull).mapToDouble(Double::doubleValue).sum();
+        double valorCustos = somarCustos(custos);
 
-        Double valorExibicao = custos.isEmpty() ? servico.getVlServico() : valorCustos;
+        Double valorExibicao = servico.getVlServico();
+        if (!custos.isEmpty()) {
+            valorExibicao = valorCustos;
+        }
 
         OrcamentoDetalheRS.ProfissionalOrcamentoRS profissionalResponse =
                 new OrcamentoDetalheRS.ProfissionalOrcamentoRS(
@@ -178,7 +188,7 @@ public final class OrcamentoMapper {
                 );
 
         OrcamentoDetalheRS.OrcamentoFinalRS orcamentoFinalResponse = null;
-        if (status.isOrcamentoFinal()) {
+        if (possuiOrcamentoFinal(orcamento)) {
             orcamentoFinalResponse = new OrcamentoDetalheRS.OrcamentoFinalRS(
                     orcamento.getId(),
                     orcamento.getDtInicioProposto(),
@@ -194,7 +204,94 @@ public final class OrcamentoMapper {
                 status.getDescricao(),
                 profissionalResponse,
                 solicitacaoResponse,
-                orcamentoFinalResponse
+                orcamentoFinalResponse,
+                orcamento.getMotivoCancelamento() == null
+                        ? null
+                        : new OrcamentoDetalheRS.CancelamentoRS(
+                                orcamento.getAutorCancelamento() == null
+                                        ? null
+                                        : orcamento.getAutorCancelamento().getDescricao(),
+                                orcamento.getUsuarioCancelamento() == null
+                                        ? null
+                                        : orcamento.getUsuarioCancelamento().getId(),
+                                orcamento.getMotivoCancelamento(),
+                                orcamento.getDsDescricaoCancelamento(),
+                                orcamento.getDtCancelamento()
+                        )
+        );
+    }
+
+    public static OrcamentoDetalheProfissionalRS toDetalheProfissionalResponse(Orcamento orcamento, List<OrcamentoImagem> imagens, OrcamentoEndereco endereco, List<OrcamentoCusto> custos, AreaAtendimento areaAtendimento) {
+        Servico servico = orcamento.getServico();
+        Usuario cliente = orcamento.getUsuario();
+        TipoOrcamentoStatus status = orcamento.getOrcamentoStatus().getTipoOrcamentoStatus();
+
+        OrcamentoDetalheProfissionalRS.ClienteOrcamentoRS clienteResponse =
+                new OrcamentoDetalheProfissionalRS.ClienteOrcamentoRS(
+                        cliente.getId(),
+                        cliente.nomeCompleto(),
+                        cliente.getUriPerfil(),
+                        cliente.getQtAvaliacaoGeral(),
+                        cliente.getQtAvalicaoes(),
+                        cliente.getStHabilitado(),
+                        new OrcamentoDetalheProfissionalRS.ContatoClienteRS(
+                                cliente.getTelCelular(),
+                                cliente.getTelWhats()
+                        )
+                );
+
+        OrcamentoDetalheProfissionalRS.SolicitacaoOrcamentoRS solicitacaoResponse =
+                new OrcamentoDetalheProfissionalRS.SolicitacaoOrcamentoRS(
+                        servico.getId(),
+                        servico.getCategoriaEspecifica().getId(),
+                        servico.getCategoriaEspecifica().getNmCategoria(),
+                        orcamento.getDsDescricao(),
+                        servico.getTipoServico() == null
+                                ? null
+                                : servico.getTipoServico().getTipoServico(),
+                        orcamento.getDtPreferidoSolicitado(),
+                        calcularDistancia(cliente, areaAtendimento, toEnderecoEntity(endereco)),
+                        imagens.stream().map(OrcamentoImagem::getUrl).toList(),
+                        endereco == null ? null : toDetalheProfissionalEnderecoResponse(endereco)
+                );
+
+        OrcamentoDetalheProfissionalRS.OrcamentoFinalRS orcamentoFinalResponse = null;
+        if (possuiOrcamentoFinal(orcamento)) {
+            orcamentoFinalResponse = new OrcamentoDetalheProfissionalRS.OrcamentoFinalRS(
+                    orcamento.getId(),
+                    orcamento.getDtInicioProposto(),
+                    orcamento.getDtFimProposto(),
+                    orcamento.getDsObservacaoProfissional(),
+                    custos.stream()
+                            .map(custo -> new OrcamentoDetalheProfissionalRS.CustoOrcamentoRS(
+                                    custo.getId(),
+                                    custo.getDsDescricao(),
+                                    custo.getVl_valor()
+                            ))
+                            .toList(),
+                    somarCustos(custos)
+            );
+        }
+
+        return new OrcamentoDetalheProfissionalRS(
+                orcamento.getId(),
+                status.getDescricao(),
+                clienteResponse,
+                solicitacaoResponse,
+                orcamentoFinalResponse,
+                orcamento.getMotivoCancelamento() == null
+                        ? null
+                        : new OrcamentoDetalheProfissionalRS.CancelamentoRS(
+                                orcamento.getAutorCancelamento() == null
+                                        ? null
+                                        : orcamento.getAutorCancelamento().getDescricao(),
+                                orcamento.getUsuarioCancelamento() == null
+                                        ? null
+                                        : orcamento.getUsuarioCancelamento().getId(),
+                                orcamento.getMotivoCancelamento(),
+                                orcamento.getDsDescricaoCancelamento(),
+                                orcamento.getDtCancelamento()
+                        )
         );
     }
 
@@ -210,6 +307,18 @@ public final class OrcamentoMapper {
                 endereco.getNrLatitude(),
                 endereco.getNrLongitude()
         );
+    }
+
+    private static OrcamentoDetalheProfissionalRS.EnderecoOrcamentoRS toDetalheProfissionalEnderecoResponse(OrcamentoEndereco endereco) {
+        return new OrcamentoDetalheProfissionalRS.EnderecoOrcamentoRS(endereco.getNmRua(), endereco.getNrRua(), endereco.getNmComplemento(), endereco.getNmBairro(), endereco.getNmCidade(), endereco.getNmEstado(), endereco.getNrCep(), endereco.getNrLatitude(), endereco.getNrLongitude());
+    }
+
+    private static double somarCustos(List<OrcamentoCusto> custos) {
+        return custos.stream().map(OrcamentoCusto::getVl_valor).filter(Objects::nonNull).mapToDouble(Double::doubleValue).sum();
+    }
+
+    private static boolean possuiOrcamentoFinal(Orcamento orcamento) {
+        return orcamento.getDtInicioProposto() != null && orcamento.getDtFimProposto() != null;
     }
 
     private static OrcamentoRS.EnderecoOrcamentoRS toEnderecoResponse(OrcamentoEndereco endereco) {

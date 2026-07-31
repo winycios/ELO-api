@@ -51,6 +51,23 @@ public class Orcamento implements Serializable {
     @Column(name = "ds_observacao_profissional", length = 200)
     private String dsObservacaoProfissional;
 
+    @Column(name = "tp_motivo_cancelamento", length = 50)
+    private String motivoCancelamento;
+
+    @Column(name = "ds_descricao_cancelamento", length = 200)
+    private String dsDescricaoCancelamento;
+
+    @Convert(converter = TipoAutorCancelamentoConverter.class)
+    @Column(name = "tp_autor_cancelamento", length = 20)
+    private TipoAutorCancelamento autorCancelamento;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_id_usuario_cancelamento")
+    private Usuario usuarioCancelamento;
+
+    @Column(name = "dt_cancelamento")
+    private LocalDateTime dtCancelamento;
+
     @Column(name = "dt_preferido_solicitado", nullable = false)
     private LocalDateTime dtPreferidoSolicitado;
 

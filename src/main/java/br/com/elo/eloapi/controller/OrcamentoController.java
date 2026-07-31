@@ -36,14 +36,39 @@ public class OrcamentoController {
         return ResponseEntity.ok(orcamentoService.listarOrcamentos(usuario, status, cursor, tamanho));
     }
 
-    @GetMapping("/listarProfisisonal")
-    public ResponseEntity<CursorPageRS<OrcamentoListagemProfissionalRS>> listarOrcamentosProfissional(@AuthenticationPrincipal Usuario usuario, @RequestParam(required = false) String status, @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer tamanho) {
+    @GetMapping("/profissional/listar")
+    public ResponseEntity<CursorPageRS<OrcamentoListagemProfissionalRS>> listarOrcamentosProfissional(@AuthenticationPrincipal Usuario usuario, @RequestParam(required = true) String status, @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer tamanho) {
         return ResponseEntity.ok(orcamentoService.listarOrcamentosProfissional(usuario, status, cursor, tamanho));
+    }
+
+    @GetMapping("/profissional/{orcamentoId}")
+    public ResponseEntity<OrcamentoDetalheProfissionalRS> buscarOrcamentoPorIdProfissional(@AuthenticationPrincipal Usuario usuario, @PathVariable @Positive Long orcamentoId) {
+        return ResponseEntity.ok(orcamentoService.buscarOrcamentoPorIdProfissional(usuario, orcamentoId));
+    }
+
+    @PostMapping("/profissional/{orcamentoId}/final")
+    public ResponseEntity<OrcamentoDetalheProfissionalRS> enviarOrcamentoFinal(@AuthenticationPrincipal Usuario usuario, @PathVariable @Positive Long orcamentoId, @RequestBody @Valid OrcamentoFinalCreateRQ request) {
+        return ResponseEntity.ok(orcamentoService.enviarOrcamentoFinal(usuario, orcamentoId, request));
+    }
+
+    @PatchMapping("/profissional/{orcamentoId}/recusar")
+    public ResponseEntity<OrcamentoDetalheProfissionalRS> recusarOrcamento(@AuthenticationPrincipal Usuario usuario, @PathVariable @Positive Long orcamentoId, @RequestBody @Valid OrcamentoCancelamentoRQ request) {
+        return ResponseEntity.ok(orcamentoService.recusarOrcamento(usuario, orcamentoId, request));
     }
 
     @GetMapping("/{orcamentoId}")
     public ResponseEntity<OrcamentoDetalheRS> buscarOrcamentoPorId(@AuthenticationPrincipal Usuario usuario, @PathVariable @Positive Long orcamentoId) {
         return ResponseEntity.ok(orcamentoService.buscarOrcamentoPorId(usuario, orcamentoId));
+    }
+
+    @PatchMapping("usuario/{orcamentoId}/aprovar")
+    public ResponseEntity<OrcamentoDetalheRS> aprovarOrcamentoFinal(@AuthenticationPrincipal Usuario usuario, @PathVariable @Positive Long orcamentoId) {
+        return ResponseEntity.ok(orcamentoService.aprovarOrcamentoFinal(usuario, orcamentoId));
+    }
+
+    @PatchMapping("usuario/{orcamentoId}/cancelar")
+    public ResponseEntity<OrcamentoDetalheRS> cancelarOrcamentoCliente(@AuthenticationPrincipal Usuario usuario, @PathVariable @Positive Long orcamentoId, @RequestBody @Valid OrcamentoCancelamentoRQ request) {
+        return ResponseEntity.ok(orcamentoService.cancelarOrcamentoCliente(usuario, orcamentoId, request));
     }
 
     @PostMapping

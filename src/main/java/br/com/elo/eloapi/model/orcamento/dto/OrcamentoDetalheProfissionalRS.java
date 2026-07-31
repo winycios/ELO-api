@@ -3,28 +3,27 @@ package br.com.elo.eloapi.model.orcamento.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record OrcamentoDetalheRS(
+public record OrcamentoDetalheProfissionalRS(
         Long id,
         String status,
-        ProfissionalOrcamentoRS profissional,
+        ClienteOrcamentoRS cliente,
         SolicitacaoOrcamentoRS solicitacao,
         OrcamentoFinalRS orcamentoFinal,
         CancelamentoRS cancelamento
 ) {
 
-    public record ProfissionalOrcamentoRS(
+    public record ClienteOrcamentoRS(
             Long id,
             String nome,
             String fotoPerfil,
-            String categoria,
             Double avaliacao,
             Integer quantidadeAvaliacoes,
-            Boolean verificado,
-            ContatoProfissionalRS contato
+            Boolean habilitado,
+            ContatoClienteRS contato
     ) {
     }
 
-    public record ContatoProfissionalRS(
+    public record ContatoClienteRS(
             String telefone,
             String whatsapp
     ) {
@@ -37,7 +36,7 @@ public record OrcamentoDetalheRS(
             String descricao,
             String tipoServico,
             LocalDateTime horarioPreferido,
-            Double valor,
+            Double distanciaKm,
             List<String> imagens,
             EnderecoOrcamentoRS endereco
     ) {

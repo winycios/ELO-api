@@ -9,10 +9,12 @@ import br.com.elo.eloapi.model.orcamento.Orcamento;
 import br.com.elo.eloapi.model.orcamento.OrcamentoCusto;
 import br.com.elo.eloapi.model.orcamento.OrcamentoEndereco;
 import br.com.elo.eloapi.model.orcamento.OrcamentoImagem;
+import br.com.elo.eloapi.model.orcamento.TipoAutorCancelamento;
 import br.com.elo.eloapi.model.orcamento.dto.*;
 import br.com.elo.eloapi.model.orcamento.mapper.OrcamentoMapper;
 import br.com.elo.eloapi.model.orcamentoStatus.OrcamentoStatus;
 import br.com.elo.eloapi.model.orcamentoStatus.TipoOrcamentoStatus;
+import br.com.elo.eloapi.model.profissional.Profissional;
 import br.com.elo.eloapi.model.publicacao.dto.CursorPageRS;
 import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
@@ -23,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +43,10 @@ public class OrcamentoService {
     private static final Logger LOGGER = LoggerFactory.getLogger(OrcamentoService.class);
     private static final Duration INTERVALO_HORARIOS = Duration.ofMinutes(30);
     private static final Duration MARGEM_APOS_RESERVA = Duration.ofHours(1);
-    private static final Set<TipoOrcamentoStatus> STATUS_QUE_OCUPAM_AGENDA = Set.of(TipoOrcamentoStatus.APROVADO, TipoOrcamentoStatus.EM_ANDAMENTO);
+    private static final Set<TipoOrcamentoStatus> STATUS_QUE_OCUPAM_AGENDA = Set.of(
+            TipoOrcamentoStatus.ORCAMENTO_FINAL,
+            TipoOrcamentoStatus.APROVADO
+    );
 
     private final ServicoRepository servicoRepository;
     private final ServicoDisponibilidadeRepository servicoDisponibilidadeRepository;
@@ -55,6 +59,7 @@ public class OrcamentoService {
     private final RedisStore redisStore;
     private final CursorCodec cursorCodec;
     private final AreaAtendimentoRepository areaAtendimentoRepository;
+    private final ProfissionalRepository profissionalRepository;
 
     @Transactional(readOnly = true)
     public HorariosDisponiveisRS buscarHorariosDisponiveis(Long servicoId, LocalDate dataReferencia) {
@@ -110,15 +115,25 @@ public class OrcamentoService {
 
     @Transactional(readOnly = true)
     public CursorPageRS<OrcamentoListagemProfissionalRS> listarOrcamentosProfissional(Usuario profissional, String filtroStatus, String cursor, int tamanho) {
-        TipoOrcamentoStatus status = buscarStatusDoFiltro(filtroStatus);
+        Set<TipoOrcamentoStatus> status = buscarStatusDoFiltroProfissional(filtroStatus);
         Long cursorId = cursorCodec.decodeId(cursor);
         List<Orcamento> encontrados = orcamentoRepository.listarPorProfissional(profissional.getId(), status, cursorId, PageRequest.of(0, tamanho + 1));
         boolean hasNext = encontrados.size() > tamanho;
         List<Orcamento> pagina = encontrados.stream().limit(tamanho).toList();
         String nextCursor = hasNext ? cursorCodec.encodeId(pagina.getLast().getId()) : null;
         AreaAtendimento areaAtendimento = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissional.getId()).orElse(null);
+        Map<Long, List<OrcamentoCusto>> custosPorOrcamento = buscarCustosPorOrcamento(pagina);
 
-        return new CursorPageRS<>(pagina.stream().map(orcamento -> OrcamentoMapper.orcamentoListagemProfissionalResponse(orcamento, areaAtendimento)).toList(), nextCursor, hasNext);
+        return new CursorPageRS<>(
+                pagina.stream()
+                        .map(orcamento -> OrcamentoMapper.orcamentoListagemProfissionalResponse(
+                                orcamento,
+                                areaAtendimento,
+                                custosPorOrcamento.getOrDefault(orcamento.getId(), List.of())))
+                        .toList(),
+                nextCursor,
+                hasNext
+        );
     }
 
     @Transactional(readOnly = true)
@@ -129,6 +144,184 @@ public class OrcamentoService {
         List<OrcamentoCusto> custos = orcamentoCustoRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
 
         return OrcamentoMapper.toDetalheResponse(orcamento, imagens, endereco, custos);
+    }
+
+    @Transactional(readOnly = true)
+    public OrcamentoDetalheProfissionalRS buscarOrcamentoPorIdProfissional(Usuario profissional, Long orcamentoId) {
+        Orcamento orcamento = buscarOrcamentoDoProfissional(profissional.getId(), orcamentoId);
+        return montarDetalheProfissional(orcamento);
+    }
+
+    @Transactional
+    public OrcamentoDetalheProfissionalRS enviarOrcamentoFinal(Usuario usuarioProfissional, Long orcamentoId, OrcamentoFinalCreateRQ dto) {
+        Profissional profissional = profissionalRepository.findByIdForUpdate(usuarioProfissional.getId())
+                .orElseThrow(() -> new ResourceNotFound("Perfil profissional não encontrado."));
+        Orcamento orcamento = buscarOrcamentoDoProfissional(profissional.getId(), orcamentoId);
+
+        validarStatusAtual(orcamento, TipoOrcamentoStatus.PENDENTE, "Somente solicitações pendentes podem receber um orçamento final.");
+        validarIntervaloProposto(orcamento, dto.inicioProposto(), dto.fimProposto());
+
+        OrcamentoStatus statusFinal = buscarStatusConfigurado(TipoOrcamentoStatus.ORCAMENTO_FINAL);
+        orcamento.setDtInicioProposto(dto.inicioProposto());
+        orcamento.setDtFimProposto(dto.fimProposto());
+        orcamento.setDsObservacaoProfissional(normalizarTextoOpcional(dto.observacaoProfissional()));
+        orcamento.setOrcamentoStatus(statusFinal);
+        orcamentoRepository.save(orcamento);
+
+        List<OrcamentoCusto> custos = orcamentoCustoRepository.saveAll(
+                dto.custos().stream()
+                        .map(custo -> new OrcamentoCusto(
+                                null,
+                                orcamento,
+                                custo.descricao().trim(),
+                                custo.valor()
+                        ))
+                        .toList()
+        );
+
+        invalidarCacheHorarios(profissional.getId());
+        return montarDetalheProfissional(orcamento, custos);
+    }
+
+    @Transactional
+    public OrcamentoDetalheProfissionalRS recusarOrcamento(Usuario profissional, Long orcamentoId, OrcamentoCancelamentoRQ dto) {
+        Orcamento orcamento = buscarOrcamentoDoProfissional(profissional.getId(), orcamentoId);
+        validarStatusAtual(orcamento, TipoOrcamentoStatus.PENDENTE, "Somente solicitações pendentes podem ser recusadas.");
+        registrarCancelamento(orcamento, TipoAutorCancelamento.PROFISSIONAL, profissional, dto.motivo(), dto.descricao());
+        orcamentoRepository.save(orcamento);
+        return montarDetalheProfissional(orcamento);
+    }
+
+    @Transactional
+    public OrcamentoDetalheRS cancelarOrcamentoCliente(Usuario cliente, Long orcamentoId, OrcamentoCancelamentoRQ dto) {
+        Orcamento orcamento = orcamentoRepository.findByIdAndUsuarioId(orcamentoId, cliente.getId()).orElseThrow(() -> new ResourceNotFound("Orçamento não encontrado."));
+        TipoOrcamentoStatus statusAtual = orcamento.getOrcamentoStatus().getTipoOrcamentoStatus();
+
+        if (!EnumSet.of(TipoOrcamentoStatus.PENDENTE, TipoOrcamentoStatus.ORCAMENTO_FINAL, TipoOrcamentoStatus.APROVADO).contains(statusAtual)) {
+            throw new ConflictException("Este orçamento não pode mais ser cancelado pelo usuário.");
+        }
+
+        registrarCancelamento(orcamento, TipoAutorCancelamento.USUARIO, cliente, dto.motivo(), dto.descricao());
+        orcamentoRepository.save(orcamento);
+        invalidarCacheHorarios(orcamento.getServico().getProfissional().getId());
+        return montarDetalheCliente(orcamento);
+    }
+
+    // já deixei pronto pois sei que um dia irá existir
+    @Transactional
+    public void cancelarOrcamentoPorExpiracao(Long orcamentoId) {
+        Orcamento orcamento = orcamentoRepository.findById(orcamentoId).orElseThrow(() -> new ResourceNotFound("Orçamento não encontrado."));
+
+        TipoOrcamentoStatus statusAtual = orcamento.getOrcamentoStatus().getTipoOrcamentoStatus();
+        if (!EnumSet.of(TipoOrcamentoStatus.PENDENTE, TipoOrcamentoStatus.ORCAMENTO_FINAL).contains(statusAtual)) {
+            throw new ConflictException("Este orçamento não está em um status que permita expiração.");
+        }
+
+        registrarCancelamento(orcamento, TipoAutorCancelamento.SISTEMA, null, "expirado", "Orçamento cancelado automaticamente por expiração.");
+        orcamentoRepository.save(orcamento);
+        invalidarCacheHorarios(orcamento.getServico().getProfissional().getId());
+    }
+
+    @Transactional
+    public OrcamentoDetalheRS aprovarOrcamentoFinal(Usuario cliente, Long orcamentoId) {
+        Orcamento orcamento = orcamentoRepository.findByIdAndUsuarioId(orcamentoId, cliente.getId())
+                .orElseThrow(() -> new ResourceNotFound("Orçamento não encontrado."));
+        validarStatusAtual(orcamento, TipoOrcamentoStatus.ORCAMENTO_FINAL, "Somente um orçamento final aguardando aprovação pode ser aprovado.");
+        orcamento.setOrcamentoStatus(buscarStatusConfigurado(TipoOrcamentoStatus.APROVADO));
+        orcamentoRepository.save(orcamento);
+
+        List<OrcamentoImagem> imagens = orcamentoImagemRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
+        OrcamentoEndereco endereco = orcamentoEnderecoRepository.findFirstByOrcamentoIdOrderByIdAsc(orcamentoId).orElse(null);
+        List<OrcamentoCusto> custos = orcamentoCustoRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
+        return OrcamentoMapper.toDetalheResponse(orcamento, imagens, endereco, custos);
+    }
+
+    private OrcamentoDetalheRS montarDetalheCliente(Orcamento orcamento) {
+        Long orcamentoId = orcamento.getId();
+        List<OrcamentoImagem> imagens = orcamentoImagemRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
+        OrcamentoEndereco endereco = orcamentoEnderecoRepository.findFirstByOrcamentoIdOrderByIdAsc(orcamentoId).orElse(null);
+        List<OrcamentoCusto> custos = orcamentoCustoRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
+        return OrcamentoMapper.toDetalheResponse(orcamento, imagens, endereco, custos);
+    }
+
+    private void registrarCancelamento(Orcamento orcamento, TipoAutorCancelamento autor, Usuario usuarioResponsavel, String motivo, String descricao) {
+        orcamento.setMotivoCancelamento(motivo.trim());
+        orcamento.setDsDescricaoCancelamento(descricao.trim());
+        orcamento.setAutorCancelamento(autor);
+        orcamento.setUsuarioCancelamento(usuarioResponsavel);
+        orcamento.setDtCancelamento(LocalDateTime.now());
+        orcamento.setOrcamentoStatus(buscarStatusConfigurado(TipoOrcamentoStatus.CANCELADO));
+    }
+
+    private Map<Long, List<OrcamentoCusto>> buscarCustosPorOrcamento(List<Orcamento> orcamentos) {
+        if (orcamentos.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> ids = orcamentos.stream().map(Orcamento::getId).toList();
+        return orcamentoCustoRepository.findAllByOrcamentoIdInOrderByOrcamentoIdAscIdAsc(ids).stream().collect(Collectors.groupingBy(custo -> custo.getOrcamento().getId()));
+    }
+
+    private Orcamento buscarOrcamentoDoProfissional(Long profissionalId, Long orcamentoId) {
+        return orcamentoRepository.findByIdAndServicoProfissionalId(orcamentoId, profissionalId).orElseThrow(() -> new ResourceNotFound("Orçamento não encontrado para este profissional."));
+    }
+
+    private OrcamentoDetalheProfissionalRS montarDetalheProfissional(Orcamento orcamento) {
+        List<OrcamentoCusto> custos = orcamentoCustoRepository.findAllByOrcamentoIdOrderByIdAsc(orcamento.getId());
+        return montarDetalheProfissional(orcamento, custos);
+    }
+
+    private OrcamentoDetalheProfissionalRS montarDetalheProfissional(Orcamento orcamento, List<OrcamentoCusto> custos) {
+        Long orcamentoId = orcamento.getId();
+        List<OrcamentoImagem> imagens = orcamentoImagemRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
+        OrcamentoEndereco endereco = orcamentoEnderecoRepository.findFirstByOrcamentoIdOrderByIdAsc(orcamentoId).orElse(null);
+        AreaAtendimento areaAtendimento = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(orcamento.getServico().getProfissional().getId()).orElse(null);
+        return OrcamentoMapper.toDetalheProfissionalResponse(orcamento, imagens, endereco, custos, areaAtendimento);
+    }
+
+    private void validarIntervaloProposto(Orcamento orcamento, LocalDateTime inicioProposto, LocalDateTime fimProposto) {
+        if (!inicioProposto.isAfter(LocalDateTime.now())) {
+            throw new BadRequestException("O início proposto deve estar no futuro.");
+        }
+        if (!fimProposto.isAfter(inicioProposto)) {
+            throw new BadRequestException("O fim proposto deve ser posterior ao início proposto.");
+        }
+        if (alinhadoAoIntervaloDaAgenda(inicioProposto) || alinhadoAoIntervaloDaAgenda(fimProposto)) {
+            throw new BadRequestException("Início e fim devem respeitar intervalos de 30 minutos.");
+        }
+
+        validarHorarioPreferido(orcamento.getServico(), inicioProposto);
+
+        long conflitos = orcamentoRepository.contarConflitosAgenda(orcamento.getServico().getProfissional().getId(), orcamento.getId(), STATUS_QUE_OCUPAM_AGENDA, inicioProposto.minus(MARGEM_APOS_RESERVA), fimProposto.plus(MARGEM_APOS_RESERVA));
+        if (conflitos > 0) {
+            throw new ConflictException("O intervalo proposto conflita com outro serviço ou orçamento do profissional.");
+        }
+    }
+
+    private boolean alinhadoAoIntervaloDaAgenda(LocalDateTime horario) {
+        return horario.getMinute() % INTERVALO_HORARIOS.toMinutes() != 0 || horario.getSecond() != 0 || horario.getNano() != 0;
+    }
+
+    private void validarStatusAtual(Orcamento orcamento, TipoOrcamentoStatus statusEsperado, String mensagem) {
+        if (orcamento.getOrcamentoStatus().getTipoOrcamentoStatus() != statusEsperado) {
+            throw new ConflictException(mensagem);
+        }
+    }
+
+    private OrcamentoStatus buscarStatusConfigurado(TipoOrcamentoStatus status) {
+        return orcamentoStatusRepository.findByTipoOrcamentoStatus(status).orElseThrow(() -> new IllegalStateException("O status " + status.getDescricao() + " não está configurado."));
+    }
+
+    private String normalizarTextoOpcional(String texto) {
+        return texto == null || texto.isBlank() ? null : texto.trim();
+    }
+
+    private void invalidarCacheHorarios(Long profissionalId) {
+        try {
+            redisStore.deleteByPattern(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissionalId));
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Redis indisponível ao invalidar horários do profissional {}.", profissionalId, exception);
+        }
     }
 
     private HorariosDisponiveisRS calcularHorariosDisponiveis(Servico servico, LocalDate inicioSemana, LocalDateTime agora) {
@@ -243,6 +436,30 @@ public class OrcamentoService {
                     .collect(Collectors.joining(", "));
             throw new BadRequestException("Status inválido. Valores aceitos: " + statusValidos + ".");
         }
+    }
+
+    private Set<TipoOrcamentoStatus> buscarStatusDoFiltroProfissional(String filtroStatus) {
+        if (filtroStatus == null || filtroStatus.isBlank() || filtroStatus.equalsIgnoreCase("todos")) {
+            return EnumSet.allOf(TipoOrcamentoStatus.class);
+        }
+
+        String filtroNormalizado = filtroStatus.trim().toLowerCase(Locale.ROOT);
+        return switch (filtroNormalizado) {
+            case "novo", "novos" -> EnumSet.of(
+                    TipoOrcamentoStatus.PENDENTE
+            );
+            case "enviado" -> EnumSet.of(
+                    TipoOrcamentoStatus.ORCAMENTO_FINAL
+            );
+            case "aprovado", "aprovados" -> EnumSet.of(
+                    TipoOrcamentoStatus.APROVADO
+            );
+            case "historico", "histórico" -> EnumSet.of(
+                    TipoOrcamentoStatus.CONCLUIDO,
+                    TipoOrcamentoStatus.CANCELADO
+            );
+            default -> throw new BadRequestException("Filtro inválido. Use novos, aprovados, historico, todos ou um status individual.");
+        };
     }
 
     private HorariosDisponiveisRS buscarHorariosNoCache(String cacheKey) {
