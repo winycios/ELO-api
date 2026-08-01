@@ -3,6 +3,7 @@ package br.com.elo.eloapi.service;
 import br.com.elo.eloapi.exception.BadRequestException;
 import br.com.elo.eloapi.exception.ConflictException;
 import br.com.elo.eloapi.exception.ResourceNotFound;
+import br.com.elo.eloapi.exception.UnauthorizedException;
 import br.com.elo.eloapi.model.areaAtendimento.AreaAtendimento;
 import br.com.elo.eloapi.model.avaliacao.AvaliacaoReserva;
 import br.com.elo.eloapi.model.avaliacao.dto.AvaliacaoOrcamentoRQ;
@@ -15,12 +16,14 @@ import br.com.elo.eloapi.model.orcamentoStatus.OrcamentoStatus;
 import br.com.elo.eloapi.model.orcamentoStatus.TipoOrcamentoStatus;
 import br.com.elo.eloapi.model.profissional.Profissional;
 import br.com.elo.eloapi.model.publicacao.dto.CursorPageRS;
+import br.com.elo.eloapi.model.redis.RefreshTokenData;
 import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
 import br.com.elo.eloapi.model.servico.TipoServico;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.repository.*;
 import br.com.elo.eloapi.service.search.SearchOutboxService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +44,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrcamentoService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OrcamentoService.class);
     private static final Duration INTERVALO_HORARIOS = Duration.ofMinutes(30);
     private static final Duration MARGEM_APOS_RESERVA = Duration.ofHours(1);
     private static final Set<TipoOrcamentoStatus> STATUS_QUE_OCUPAM_AGENDA = Set.of(
@@ -78,13 +80,13 @@ public class OrcamentoService {
         Long profissionalId = servico.getProfissional().getId();
         String cacheKey = String.format(RedisStore.KEY_AVAILABLE_HOURS, profissionalId, servicoId, inicioSemana);
 
-        HorariosDisponiveisRS cache = buscarHorariosNoCache(cacheKey);
+        HorariosDisponiveisRS cache = redisStore.buscarNoCache(cacheKey, HorariosDisponiveisRS.class);
         if (cache != null) {
             return cache;
         }
 
         HorariosDisponiveisRS response = calcularHorariosDisponiveis(servico, inicioSemana, LocalDateTime.now());
-        salvarHorariosNoCache(cacheKey, response);
+        redisStore.salvarNoCache(cacheKey, response, RedisStore.AVAILABLE_TWO_MINUTES_CACHE_DURATION);
         return response;
     }
 
@@ -102,6 +104,7 @@ public class OrcamentoService {
 
         List<OrcamentoImagem> imagens = orcamentoImagemRepository.saveAll(dto.orcamentoImagemCreateRQList().stream().map(url -> OrcamentoMapper.toImagemEntity(url, orcamento)).toList());
 
+        redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, servico.getProfissional().getId()));
         return OrcamentoMapper.toResponse(orcamento, imagens, enderecoSnapshot);
     }
 
@@ -125,6 +128,46 @@ public class OrcamentoService {
                 nextCursor,
                 hasNext
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Map<String, List<OrcamentoListagemProfissionalRS>>> listarAgenda(Usuario profissional, LocalDate dataInicio) {
+
+        LocalDate inicioSemana = dataInicio.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        LocalDate fimSemana = inicioSemana.plusDays(6);
+
+        String cacheKey = String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR_PATTERN, inicioSemana, fimSemana);
+        Map<String, List<OrcamentoListagemProfissionalRS>> cache = redisStore.buscarNoCache(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, profissional.getId()), cacheKey, new TypeReference<>() {});
+        if (cache != null) {
+            return Optional.of(cache);
+        }
+
+        List<Orcamento> orcamentos = orcamentoRepository.listarAgendaPorProfissional(profissional.getId(), Set.of(TipoOrcamentoStatus.CONCLUIDO, TipoOrcamentoStatus.PENDENTE, TipoOrcamentoStatus.ORCAMENTO_FINAL, TipoOrcamentoStatus.APROVADO), inicioSemana.atStartOfDay(), fimSemana.plusDays(1).atStartOfDay());
+        if (orcamentos == null || orcamentos.isEmpty()) {
+            return Optional.empty();
+        }
+        AreaAtendimento areaAtendimento = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissional.getId()).orElse(null);
+        Map<Long, List<OrcamentoCusto>> custosPorOrcamento = buscarCustosPorOrcamento(orcamentos);
+        Set<Long> orcamentosAvaliados = buscarOrcamentosAvaliados(orcamentos, profissional.getId());
+
+        Map<String, List<OrcamentoListagemProfissionalRS>> agendaPorDia = new LinkedHashMap<>();
+        for (LocalDate data = inicioSemana; !data.isAfter(fimSemana); data = data.plusDays(1)) {
+            agendaPorDia.put(data.toString(), new ArrayList<>());
+        }
+
+        for (Orcamento orcamento : orcamentos) {
+            OrcamentoListagemProfissionalRS response = OrcamentoMapper.orcamentoListagemProfissionalResponse(
+                    orcamento,
+                    areaAtendimento,
+                    custosPorOrcamento.getOrDefault(orcamento.getId(), List.of()),
+                    estaConcluido(orcamento) && orcamentosAvaliados.contains(orcamento.getId())
+            );
+            LocalDateTime dataAgenda = orcamento.getDtInicioProposto() != null ? orcamento.getDtInicioProposto() : orcamento.getDtPreferidoSolicitado();
+            agendaPorDia.get(dataAgenda.toLocalDate().toString()).add(response);
+        }
+
+        redisStore.salvarNoCache(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, profissional.getId()), cacheKey, agendaPorDia, RedisStore.AVAILABLE_TWO_HOURS_CACHE_DURATION);
+        return Optional.of(agendaPorDia);
     }
 
     @Transactional(readOnly = true)
@@ -195,7 +238,8 @@ public class OrcamentoService {
                         .toList()
         );
 
-        invalidarCacheHorarios(profissional.getId());
+        redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissional.getId()));
+        redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, profissional.getId()));
         return montarDetalheProfissional(orcamento, custos);
     }
 
@@ -205,6 +249,7 @@ public class OrcamentoService {
         validarStatusAtual(orcamento, TipoOrcamentoStatus.PENDENTE, "Somente solicitações pendentes podem ser recusadas.");
         registrarCancelamento(orcamento, TipoAutorCancelamento.PROFISSIONAL, profissional, dto.motivo(), dto.descricao());
         orcamentoRepository.save(orcamento);
+        redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, profissional.getId()));
         return montarDetalheProfissional(orcamento);
     }
 
@@ -219,7 +264,8 @@ public class OrcamentoService {
 
         registrarCancelamento(orcamento, TipoAutorCancelamento.USUARIO, cliente, dto.motivo(), dto.descricao());
         orcamentoRepository.save(orcamento);
-        invalidarCacheHorarios(orcamento.getServico().getProfissional().getId());
+        redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, orcamento.getServico().getProfissional().getId()));
+        redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, orcamento.getServico().getProfissional().getId()));
         return montarDetalheCliente(orcamento);
     }
 
@@ -235,7 +281,8 @@ public class OrcamentoService {
 
         registrarCancelamento(orcamento, TipoAutorCancelamento.SISTEMA, null, "expirado", "Orçamento cancelado automaticamente por expiração.");
         orcamentoRepository.save(orcamento);
-        invalidarCacheHorarios(orcamento.getServico().getProfissional().getId());
+        redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, orcamento.getServico().getProfissional().getId()));
+        redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, orcamento.getServico().getProfissional().getId()));
     }
 
     @Transactional
@@ -245,6 +292,7 @@ public class OrcamentoService {
         validarStatusAtual(orcamento, TipoOrcamentoStatus.ORCAMENTO_FINAL, "Somente um orçamento final aguardando aprovação pode ser aprovado.");
         orcamento.setOrcamentoStatus(buscarStatusConfigurado(TipoOrcamentoStatus.APROVADO));
         orcamentoRepository.save(orcamento);
+        redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, orcamento.getServico().getProfissional().getId()));
 
         List<OrcamentoImagem> imagens = orcamentoImagemRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
         OrcamentoEndereco endereco = orcamentoEnderecoRepository.findFirstByOrcamentoIdOrderByIdAsc(orcamentoId).orElse(null);
@@ -277,7 +325,8 @@ public class OrcamentoService {
         orcamentoRepository.save(orcamento);
         profissionalRepository.save(profissional);
         searchOutboxService.solicitarReindexacao(profissional.getId());
-        invalidarCacheHorarios(profissional.getId());
+        redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissional.getId()));
+        redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, profissional.getId()));
         return montarDetalheProfissional(orcamento);
     }
 
@@ -427,14 +476,6 @@ public class OrcamentoService {
         return texto == null || texto.isBlank() ? null : texto.trim();
     }
 
-    private void invalidarCacheHorarios(Long profissionalId) {
-        try {
-            redisStore.deleteByPattern(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissionalId));
-        } catch (RuntimeException exception) {
-            LOGGER.warn("Redis indisponível ao invalidar horários do profissional {}.", profissionalId, exception);
-        }
-    }
-
     private HorariosDisponiveisRS calcularHorariosDisponiveis(Servico servico, LocalDate inicioSemana, LocalDateTime agora) {
         List<ServicoDisponibilidade> disponibilidades = servicoDisponibilidadeRepository.findAllByServicoIdAndStAtivoTrueOrderByDiaSemanaAscHrInicioAsc(servico.getId());
         Map<Integer, List<ServicoDisponibilidade>> disponibilidadesPorDia = disponibilidades.stream().collect(Collectors.groupingBy(ServicoDisponibilidade::getDiaSemana));
@@ -569,25 +610,9 @@ public class OrcamentoService {
                     TipoOrcamentoStatus.CONCLUIDO,
                     TipoOrcamentoStatus.CANCELADO
             );
-            default -> throw new BadRequestException("Filtro inválido. Use novos, aprovados, historico, todos ou um status individual.");
+            default ->
+                    throw new BadRequestException("Filtro inválido. Use novos, aprovados, historico, todos ou um status individual.");
         };
-    }
-
-    private HorariosDisponiveisRS buscarHorariosNoCache(String cacheKey) {
-        try {
-            return redisStore.find(cacheKey, HorariosDisponiveisRS.class).orElse(null);
-        } catch (RuntimeException exception) {
-            LOGGER.warn("Redis indisponível ao consultar horários. Consultando o MySQL.", exception);
-            return null;
-        }
-    }
-
-    private void salvarHorariosNoCache(String cacheKey, HorariosDisponiveisRS response) {
-        try {
-            redisStore.save(cacheKey, response, RedisStore.AVAILABLE_HOURS_CACHE_DURATION);
-        } catch (RuntimeException exception) {
-            LOGGER.warn("Não foi possível armazenar os horários disponíveis no Redis.", exception);
-        }
     }
 
     private record Intervalo(LocalDateTime inicio, LocalDateTime fim) {

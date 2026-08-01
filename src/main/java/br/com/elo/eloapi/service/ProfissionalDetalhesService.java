@@ -48,10 +48,10 @@ public class ProfissionalDetalhesService {
     public ProfissionalServicoRS buscarDetalhes(Long profissionalId, Long servicoId, Usuario usuario, List<Servico> servicos) {
         String cacheKey = String.format(RedisStore.KEY_PROFESSIONAL_DETAILS, profissionalId, servicoId);
 
-        ProfissionalServicoRS detalhes = buscarNoCache(cacheKey);
+        ProfissionalServicoRS detalhes = redisStore.buscarNoCache(cacheKey, ProfissionalServicoRS.class);
         if (detalhes == null) {
             detalhes = buscarNoBanco(profissionalId, servicoId, servicos);
-            salvarNoCache(cacheKey, detalhes);
+            redisStore.salvarNoCache(cacheKey, detalhes, RedisStore.CACHE_DURATION);
         }
 
         Endereco origem = null;
@@ -105,24 +105,6 @@ public class ProfissionalDetalhesService {
 
         return profissionalServicoMapper.toResponse(profissional, servicoSelecionado, servicos, imagensPorServico, disponibilidadesPorServico, ultimasAvaliacoes, calcularPercentualPositivas(quantidadeAvaliacoesPersistidas, quantidadePositivas));
     }
-
-    private ProfissionalServicoRS buscarNoCache(String cacheKey) {
-        try {
-            return redisStore.find(cacheKey, ProfissionalServicoRS.class).orElse(null);
-        } catch (RuntimeException exception) {
-            LOGGER.warn("Redis indisponível ao consultar detalhes do profissional. Consultando MySQL.", exception);
-            return null;
-        }
-    }
-
-    private void salvarNoCache(String cacheKey, ProfissionalServicoRS detalhes) {
-        try {
-            redisStore.save(cacheKey, detalhes, RedisStore.CACHE_DURATION);
-        } catch (RuntimeException exception) {
-            LOGGER.warn("Não foi possível armazenar os detalhes do profissional no Redis.", exception);
-        }
-    }
-
 
     private Double calcularPercentualPositivas(long quantidade, long positivas) {
         if (quantidade == 0) {

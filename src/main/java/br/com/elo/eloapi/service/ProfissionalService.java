@@ -66,15 +66,15 @@ public class ProfissionalService {
         List<ServicoDisponibilidade> disponibilidades = salvarDisponibilidades(servico, dto.servicoDisponibilidadeCreateRQList());
 
         buscarServicosESalvarNoCache(profissional.getId());
-        invalidarCacheDetalhes(profissional.getId());
-        invalidarCacheHorarios(profissional.getId());
+        redisStore.deletarNoCache(String.format(RedisStore.KEY_PROFESSIONAL_DETAILS_PATTERN, profissional.getId()));
+        redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissional.getId()));
         searchOutboxService.solicitarReindexacao(profissional.getId());
         return ServicoMapper.toResponse(servico, imagens, disponibilidades);
     }
 
     @Transactional(readOnly = true)
     public List<ServicoListaRS> listarServicos(Usuario usuario) {
-        return redisStore.findList(String.format(RedisStore.KEY_PROF_SERVICES, usuario.getId()), ServicoListaRS.class).orElseGet(() -> buscarServicosESalvarNoCache(usuario.getId()));
+        return redisStore.buscarNoCacheList(String.format(RedisStore.KEY_PROF_SERVICES, usuario.getId()), ServicoListaRS.class).orElseGet(() -> buscarServicosESalvarNoCache(usuario.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -91,8 +91,8 @@ public class ProfissionalService {
         servico.setStAtivo(false);
         servicoRepository.save(servico);
         buscarServicosESalvarNoCache(profissional.getId());
-        invalidarCacheDetalhes(profissional.getId());
-        invalidarCacheHorarios(profissional.getId());
+        redisStore.deletarNoCache(String.format(RedisStore.KEY_PROFESSIONAL_DETAILS_PATTERN, profissional.getId()));
+        redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissional.getId()));
         searchOutboxService.solicitarReindexacao(profissional.getId());
     }
 
@@ -110,7 +110,7 @@ public class ProfissionalService {
                 });
         AreaAtendimentoMapper.toUpdateEntity(areaAtendimento, profissionalUpdateDTO.areaAtendimentoUpdateRQ());
         AreaAtendimento areaAtualizada = areaAtendimentoRepository.save(areaAtendimento);
-        invalidarCacheDetalhes(profissional.getId());
+        redisStore.deletarNoCache(String.format(RedisStore.KEY_PROFESSIONAL_DETAILS_PATTERN, profissional.getId()));
         searchOutboxService.solicitarReindexacao(profissional.getId());
         return ProfissionalMapper.toResponse(profAtualizado, areaAtualizada);
     }
@@ -175,25 +175,9 @@ public class ProfissionalService {
 
     private List<ServicoListaRS> buscarServicosESalvarNoCache(Long id) {
         List<ServicoListaRS> servicoListaRS = servicoRepository.findAllByProfissionalIdAndStAtivoTrue(id).stream().map(ServicoMapper::toListResponse).toList();
-        redisStore.save(String.format(RedisStore.KEY_PROF_SERVICES, id), servicoListaRS, RedisStore.CACHE_DURATION);
+        redisStore.salvarNoCache(String.format(RedisStore.KEY_PROF_SERVICES, id), servicoListaRS, RedisStore.CACHE_DURATION);
 
         return servicoListaRS;
-    }
-
-    private void invalidarCacheDetalhes(Long profissionalId) {
-        try {
-            redisStore.deleteByPattern(String.format(RedisStore.KEY_PROFESSIONAL_DETAILS_PATTERN, profissionalId));
-        } catch (RuntimeException ignored) {
-            // A alteração no MySQL não deve falhar caso o Redis esteja indisponível.
-        }
-    }
-
-    private void invalidarCacheHorarios(Long profissionalId) {
-        try {
-            redisStore.deleteByPattern(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissionalId));
-        } catch (RuntimeException ignored) {
-            // A disponibilidade persistida no MySQL continua sendo a fonte de verdade.
-        }
     }
 
     @Transactional
@@ -201,7 +185,7 @@ public class ProfissionalService {
         Profissional profissional = buscarProfissional(usuario);
         profissional.setStDisponivel(isAtivar);
         profissionalRepository.save(profissional);
-        invalidarCacheHorarios(profissional.getId());
+        redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissional.getId()));
         searchOutboxService.solicitarReindexacao(profissional.getId());
     }
 

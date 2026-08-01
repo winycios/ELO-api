@@ -84,6 +84,30 @@ public interface OrcamentoRepository extends JpaRepository<Orcamento, Long> {
             """)
     List<Orcamento> listarPorProfissional(@Param("profissionalId") Long profissionalId, @Param("status") Collection<TipoOrcamentoStatus> status, @Param("cursorId") Long cursorId, Pageable pageable);
 
+    @EntityGraph(attributePaths = {
+            "usuario",
+            "servico",
+            "servico.profissional",
+            "servico.categoriaEspecifica",
+            "orcamentoStatus",
+            "endereco"
+    })
+    @Query("""
+            select orcamento
+             from Orcamento orcamento
+             where orcamento.servico.profissional.id = :profissionalId
+               and orcamento.orcamentoStatus.tipoOrcamentoStatus in :status
+               and coalesce(orcamento.dtInicioProposto, orcamento.dtPreferidoSolicitado) >= :inicioPeriodo
+               and coalesce(orcamento.dtInicioProposto, orcamento.dtPreferidoSolicitado) < :fimPeriodo
+             order by coalesce(orcamento.dtInicioProposto, orcamento.dtPreferidoSolicitado), orcamento.id
+           """)
+    List<Orcamento> listarAgendaPorProfissional(
+            @Param("profissionalId") Long profissionalId,
+            @Param("status") Collection<TipoOrcamentoStatus> status,
+            @Param("inicioPeriodo") LocalDateTime inicioPeriodo,
+            @Param("fimPeriodo") LocalDateTime fimPeriodo
+    );
+
     @Query("""
             select orcamento.dtInicioProposto as inicio,
                    orcamento.dtFimProposto as fim

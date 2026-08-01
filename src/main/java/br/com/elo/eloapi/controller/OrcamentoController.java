@@ -9,6 +9,7 @@ import br.com.elo.eloapi.service.OrcamentoService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 @Validated
 @RestController
@@ -36,6 +39,11 @@ public class OrcamentoController {
     @GetMapping("/listar")
     public ResponseEntity<CursorPageRS<OrcamentoListagemRS>> listarOrcamentos(@AuthenticationPrincipal Usuario usuario, @RequestParam(required = false) String status, @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer tamanho) {
         return ResponseEntity.ok(orcamentoService.listarOrcamentos(usuario, status, cursor, tamanho));
+    }
+
+    @GetMapping("agenda/listar")
+    public ResponseEntity<Map<String, List<OrcamentoListagemProfissionalRS>>> listarAgendaProfissional(@AuthenticationPrincipal Usuario usuario, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @NotNull LocalDate dataInicio) {
+        return orcamentoService.listarAgenda(usuario, dataInicio).map(listagem -> ResponseEntity.ok().body(listagem)).orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @GetMapping("/profissional/listar")

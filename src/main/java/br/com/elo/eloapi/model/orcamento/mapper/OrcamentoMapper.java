@@ -139,6 +139,7 @@ public final class OrcamentoMapper {
                 servico.getCategoriaEspecifica().getNmCategoria(),
                 orcamento.getDsDescricao(),
                 calcularDistancia(orcamento.getUsuario(), areaAtendimento, toEnderecoEntity(orcamento.getEndereco())),
+                orcamento.getEndereco().getNmBairro(),
                 orcamento.getDtCriacao(),
                 orcamento.getDtPreferidoSolicitado(),
                 orcamento.getDtInicioProposto(),

@@ -91,7 +91,11 @@ public class AuthService {
         }
 
         Profissional profissional = profissionalRepository.findByUsuarioEmail(email).orElseThrow(() -> new ResourceNotFound("Usuário não encontrado!"));
-        RefreshTokenData tokenData = redisStore.findHset(String.format(RedisStore.KEY_TEMPLATE_AUTH, profissional.getUsuario().getId()), deviceCode, RefreshTokenData.class).orElseThrow(() -> new UnauthorizedException("Sessão do dispositivo não encontrada ou expirada."));
+        RefreshTokenData tokenData = redisStore.buscarNoCache(String.format(RedisStore.KEY_TEMPLATE_AUTH, profissional.getUsuario().getId()), deviceCode, RefreshTokenData.class);
+
+        if (tokenData == null) {
+            throw new UnauthorizedException("Sessão do dispositivo não encontrada ou expirada.");
+        }
 
         if (!MessageDigest.isEqual(tokenData.tokenHash().getBytes(StandardCharsets.UTF_8), sha256(token).getBytes(StandardCharsets.UTF_8))) {
             throw new UnauthorizedException("Refresh token não corresponde ao dispositivo.");
@@ -110,7 +114,7 @@ public class AuthService {
                     jwtService.extractTokenId(refreshToken),
                     sha256(refreshToken),
                     profissional.getUsuario().getId());
-            redisStore.saveHSet(String.format(RedisStore.KEY_TEMPLATE_AUTH, profissional.getUsuario().getId()), deviceCode, data, Duration.ofMillis(refreshTokenExpiration));
+            redisStore.salvarNoCache(String.format(RedisStore.KEY_TEMPLATE_AUTH, profissional.getUsuario().getId()), deviceCode, data, Duration.ofMillis(refreshTokenExpiration));
         }
 
         return new LoginResponseRS(profissional.getId(), accessToken, refreshToken, profissional.getUsuario().nomeCompleto(), profissional.getUsuario().getUriPerfil(), profissional.getUriPerfil(), profissional.getStHabilitado(), profissional.getUsuario().getStHabilitado());

@@ -11,6 +11,7 @@ public record OrcamentoListagemProfissionalRS(
         String categoria,
         String descricao,
         Double distanciaKm,
+        String bairro,
         LocalDateTime dataHoraCriacao,
         LocalDateTime horarioPreferido,
         LocalDateTime inicioProposto,

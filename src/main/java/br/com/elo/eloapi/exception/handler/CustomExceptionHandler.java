@@ -11,8 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -110,6 +112,22 @@ public class CustomExceptionHandler {
         logger.warn("Servico de busca indisponivel em {}", request.getRequestURI(), e);
         return ResponseEntity.status(status).body(err);
     }
+
+    @ExceptionHandler({NoResourceFoundException.class, MissingServletRequestParameterException.class})
+    public ResponseEntity<ModelError> requestException(Exception e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ModelError err = new ModelError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "Endpoint não encontrado",
+                request.getRequestURI()
+        );
+
+        logger.error("Endpoint não encontrado {}", request.getRequestURI(), e);
+        return ResponseEntity.status(status).body(err);
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ModelError> handleUnexpectedException(Exception e, HttpServletRequest request) {
