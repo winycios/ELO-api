@@ -10,6 +10,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Validated
 @RestController
 @RequestMapping("/estimativa")
@@ -26,5 +28,10 @@ public class ProfissionalDetalhesController {
     @GetMapping(value = "profissional/{id}/detalhes", params = "categoriaId")
     public ResponseEntity<ProfissionalServicoRS> buscarDetalhesPorCategoria(@PathVariable @Positive Long id, @RequestParam @Positive Long categoriaId, @AuthenticationPrincipal Usuario usuario) {
         return ResponseEntity.ok(profissionalDetalhesService.buscarDetalhesPorCategoria(id, categoriaId, usuario));
+    }
+
+    @GetMapping(value = "profissional/{id}/detalhes/comentarios", params = "categoriaId")
+    public ResponseEntity<List<ProfissionalServicoRS.AvaliacaoRS>> buscarDetalhesComentarios(@PathVariable @Positive Long id, @RequestParam @Positive Long categoriaId) {
+        return ResponseEntity.ok(profissionalDetalhesService.buscarDetalhesComentarios(id, categoriaId));
     }
 }

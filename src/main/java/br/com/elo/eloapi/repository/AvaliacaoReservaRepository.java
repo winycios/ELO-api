@@ -1,6 +1,7 @@
 package br.com.elo.eloapi.repository;
 
 import br.com.elo.eloapi.model.avaliacao.AvaliacaoReserva;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,11 +15,57 @@ import java.util.List;
 public interface AvaliacaoReservaRepository extends JpaRepository<AvaliacaoReserva, Long> {
 
     @EntityGraph(attributePaths = "avaliador")
-    List<AvaliacaoReserva> findTop3ByUsuarioAvaliadoIdOrderByIdDesc(Long usuarioAvaliadoId);
+    @Query("""
+            select avaliacao
+              from AvaliacaoReserva avaliacao
+             where avaliacao.usuarioAvaliado.id = :usuarioAvaliadoId
+               and exists (
+                    select 1
+                      from Orcamento orcamento
+                     where orcamento.id = avaliacao.reservaId
+                       and orcamento.servico.categoriaEspecifica.categoriaGeral.id = :categoriaGeralId
+               )
+             order by avaliacao.id desc
+            """)
+    List<AvaliacaoReserva> findByUsuarioAvaliadoIdAndCategoriaGeralIdOrderByIdDesc(
+            @Param("usuarioAvaliadoId") Long usuarioAvaliadoId,
+            @Param("categoriaGeralId") Long categoriaGeralId,
+            Pageable pageable
+    );
 
-    long countByUsuarioAvaliadoId(Long usuarioAvaliadoId);
+    @Query("""
+            select count(avaliacao)
+              from AvaliacaoReserva avaliacao
+             where avaliacao.usuarioAvaliado.id = :usuarioAvaliadoId
+               and exists (
+                    select 1
+                      from Orcamento orcamento
+                     where orcamento.id = avaliacao.reservaId
+                       and orcamento.servico.categoriaEspecifica.categoriaGeral.id = :categoriaGeralId
+               )
+            """)
+    long countByUsuarioAvaliadoIdAndCategoriaGeralId(
+            @Param("usuarioAvaliadoId") Long usuarioAvaliadoId,
+            @Param("categoriaGeralId") Long categoriaGeralId
+    );
 
-    long countByUsuarioAvaliadoIdAndNotaGreaterThanEqual(Long usuarioAvaliadoId, Integer notaMinima);
+    @Query("""
+            select count(avaliacao)
+              from AvaliacaoReserva avaliacao
+             where avaliacao.usuarioAvaliado.id = :usuarioAvaliadoId
+               and avaliacao.nota >= :notaMinima
+               and exists (
+                    select 1
+                      from Orcamento orcamento
+                     where orcamento.id = avaliacao.reservaId
+                       and orcamento.servico.categoriaEspecifica.categoriaGeral.id = :categoriaGeralId
+               )
+            """)
+    long countByUsuarioAvaliadoIdAndCategoriaGeralIdAndNotaGreaterThanEqual(
+            @Param("usuarioAvaliadoId") Long usuarioAvaliadoId,
+            @Param("categoriaGeralId") Long categoriaGeralId,
+            @Param("notaMinima") Integer notaMinima
+    );
 
     boolean existsByReservaIdAndAvaliadorId(Long reservaId, Long avaliadorId);
 

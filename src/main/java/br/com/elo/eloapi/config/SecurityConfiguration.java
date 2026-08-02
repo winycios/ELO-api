@@ -35,7 +35,7 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        .requestMatchers("/estimativa/profissional/*/detalhes", "/busca/profissionais", "/categoria/listar", "/vitrine/publicacoes/*/comentarios", "/vitrine/listar", "/auth/**", "/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/estimativa/profissional/**", "/busca/profissionais", "/categoria/listar", "/vitrine/publicacoes/*/comentarios", "/vitrine/listar", "/auth/**", "/actuator/health", "/actuator/health/**").permitAll()
                         .anyRequest().authenticated())
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .sessionManagement(session -> session

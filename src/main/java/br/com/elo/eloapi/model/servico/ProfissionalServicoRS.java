@@ -1,5 +1,6 @@
 package br.com.elo.eloapi.model.servico;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record ProfissionalServicoRS(
@@ -70,7 +71,8 @@ public record ProfissionalServicoRS(
             String avaliador,
             String fotoAvaliador,
             Integer nota,
-            String comentario
+            String comentario,
+            LocalDateTime dataCriacao
     ) {
     }
 }

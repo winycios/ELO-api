@@ -32,6 +32,7 @@ public class RedisStore {
     public static final String KEY_PROF_SERVICES = "services:profissional:%d";
     public static final String KEY_PROFESSIONAL_DETAILS = "professional-details:%d:%d";
     public static final String KEY_AVAILABLE_HOURS = "available-hours:professional:%d:service:%d:week:%s";
+    public static final String KEY_PROFESSIONAL_COMMENTS = "professional-details-comments:%d%d";
     // Caso um dia tiver vontade, o correto é isso virar um hset
     public static final String KEY_PROFESSIONAL_DETAILS_PATTERN = "professional-details:%d:*";
     public static final String KEY_AVAILABLE_HOURS_PATTERN = "available-hours:professional:%d:*";

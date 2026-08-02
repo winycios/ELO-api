@@ -136,7 +136,8 @@ public class ProfissionalServicoMapper {
                 avaliador.nomeCompleto(),
                 avaliador.getUriPerfil(),
                 avaliacao.getNota(),
-                avaliacao.getComentario()
+                avaliacao.getComentario(),
+                avaliacao.getDtCriacao()
         );
     }
 

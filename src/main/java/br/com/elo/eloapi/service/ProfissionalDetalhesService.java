@@ -14,9 +14,12 @@ import br.com.elo.eloapi.model.servico.ServicoImagem;
 import br.com.elo.eloapi.model.servico.mapper.ProfissionalServicoMapper;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.repository.*;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +46,18 @@ public class ProfissionalDetalhesService {
     private final ProfissionalServicoMapper profissionalServicoMapper;
     private final CategoriaEspecificaRepository categoriaEspecificaRepository;
 
+    @Transactional(readOnly = true)
+    public List<ProfissionalServicoRS.AvaliacaoRS> buscarDetalhesComentarios(@Positive Long profissionalId, @Positive Long categoriaId) {
+        String cacheKey = String.format(RedisStore.KEY_PROFESSIONAL_COMMENTS, profissionalId, categoriaId);
+
+        List<ProfissionalServicoRS.AvaliacaoRS> avaliacaoList = redisStore.buscarNoCacheList(cacheKey, ProfissionalServicoRS.AvaliacaoRS.class).orElse(null);
+        if (avaliacaoList == null) {
+            avaliacaoList = buscarAvaliacoes(profissionalId, categoriaId);
+            redisStore.salvarNoCache(cacheKey, avaliacaoList, RedisStore.CACHE_DURATION);
+        }
+
+        return avaliacaoList;
+    }
 
     @Transactional(readOnly = true)
     public ProfissionalServicoRS buscarDetalhes(Long profissionalId, Long servicoId, Usuario usuario, List<Servico> servicos) {
@@ -75,6 +90,11 @@ public class ProfissionalDetalhesService {
         return buscarDetalhes(profissionalId, servicoList.getFirst().getId(), usuario, servicoList);
     }
 
+
+    private List<ProfissionalServicoRS.AvaliacaoRS> buscarAvaliacoes(Long profissionalId, Long categoriaId) {
+        return avaliacaoRepository.findByUsuarioAvaliadoIdAndCategoriaGeralIdOrderByIdDesc(profissionalId, categoriaId, Pageable.unpaged()).stream().map(profissionalServicoMapper::toAvaliacaoResponse).toList();
+    }
+
     private ProfissionalServicoRS buscarNoBanco(Long profissionalId, Long servicoId, List<Servico> servicos) {
         Profissional profissional = profissionalRepository.findByIdAndStHabilitadoTrue(profissionalId).orElseThrow(() -> new ResourceNotFound("Profissional não encontrado"));
 
@@ -88,6 +108,7 @@ public class ProfissionalDetalhesService {
         }
 
         Servico servicoSelecionado = servicos.stream().filter(servico -> servico.getId().equals(servicoId)).findFirst().orElseThrow(() -> new ResourceNotFound("Serviço ativo não encontrado para este profissional"));
+        Long categoriaGeralId = servicoSelecionado.getCategoriaEspecifica().getCategoriaGeral().getId();
 
         List<Long> servicoIds = servicos.stream().map(Servico::getId).toList();
         Map<Long, List<ServicoImagem>> imagensPorServico = servicoImagemRepository
@@ -99,9 +120,9 @@ public class ProfissionalDetalhesService {
                 .stream()
                 .collect(Collectors.groupingBy(disponibilidade -> disponibilidade.getServico().getId()));
 
-        List<AvaliacaoReserva> ultimasAvaliacoes = avaliacaoRepository.findTop3ByUsuarioAvaliadoIdOrderByIdDesc(profissionalId);
-        long quantidadeAvaliacoesPersistidas = avaliacaoRepository.countByUsuarioAvaliadoId(profissionalId);
-        long quantidadePositivas = avaliacaoRepository.countByUsuarioAvaliadoIdAndNotaGreaterThanEqual(profissionalId, 4);
+        List<AvaliacaoReserva> ultimasAvaliacoes = avaliacaoRepository.findByUsuarioAvaliadoIdAndCategoriaGeralIdOrderByIdDesc(profissionalId, categoriaGeralId, PageRequest.of(0, 3));
+        long quantidadeAvaliacoesPersistidas = avaliacaoRepository.countByUsuarioAvaliadoIdAndCategoriaGeralId(profissionalId, categoriaGeralId);
+        long quantidadePositivas = avaliacaoRepository.countByUsuarioAvaliadoIdAndCategoriaGeralIdAndNotaGreaterThanEqual(profissionalId, categoriaGeralId, 3);
 
         return profissionalServicoMapper.toResponse(profissional, servicoSelecionado, servicos, imagensPorServico, disponibilidadesPorServico, ultimasAvaliacoes, calcularPercentualPositivas(quantidadeAvaliacoesPersistidas, quantidadePositivas));
     }
