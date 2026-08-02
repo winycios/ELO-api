@@ -2,6 +2,7 @@ package br.com.elo.eloapi.repository;
 
 
 import br.com.elo.eloapi.model.orcamento.Orcamento;
+import br.com.elo.eloapi.model.orcamento.TipoAutorCancelamento;
 import br.com.elo.eloapi.model.orcamentoStatus.TipoOrcamentoStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -145,6 +146,97 @@ public interface OrcamentoRepository extends JpaRepository<Orcamento, Long> {
             @Param("inicioSemMargem") LocalDateTime inicioSemMargem,
             @Param("fimComMargem") LocalDateTime fimComMargem
     );
+
+    @Query("""
+            select coalesce(sum(case
+                       when orcamento.orcamentoStatus.tipoOrcamentoStatus = :statusPendente
+                       then 1 else 0 end), 0) as orcamentosPendentes,
+                   coalesce(sum(case
+                       when orcamento.orcamentoStatus.tipoOrcamentoStatus in :statusAgenda
+                        and coalesce(orcamento.dtInicioProposto, orcamento.dtPreferidoSolicitado) >= :inicioHoje
+                        and coalesce(orcamento.dtInicioProposto, orcamento.dtPreferidoSolicitado) < :fimHoje
+                       then 1 else 0 end), 0) as servicosHoje,
+                   coalesce(sum(case
+                       when orcamento.dtCriacao >= :inicioMes
+                        and orcamento.dtCriacao < :fimMes
+                       then 1 else 0 end), 0) as solicitacoesMes,
+                   coalesce(sum(case
+                       when orcamento.dtCriacao >= :inicioMes
+                        and orcamento.dtCriacao < :fimMes
+                        and (
+                            orcamento.orcamentoStatus.tipoOrcamentoStatus in :statusRespondidos
+                            or (
+                                orcamento.orcamentoStatus.tipoOrcamentoStatus = :statusCancelado
+                                and (
+                                    orcamento.autorCancelamento = :autorProfissional
+                                    or orcamento.dtInicioProposto is not null
+                                )
+                            )
+                        )
+                       then 1 else 0 end), 0) as solicitacoesRespondidasMes
+              from Orcamento orcamento
+             where orcamento.servico.profissional.id = :profissionalId
+            """)
+    DashboardContadores buscarContadoresDashboard(
+            @Param("profissionalId") Long profissionalId,
+            @Param("statusPendente") TipoOrcamentoStatus statusPendente,
+            @Param("statusAgenda") Collection<TipoOrcamentoStatus> statusAgenda,
+            @Param("statusRespondidos") Collection<TipoOrcamentoStatus> statusRespondidos,
+            @Param("statusCancelado") TipoOrcamentoStatus statusCancelado,
+            @Param("autorProfissional") TipoAutorCancelamento autorProfissional,
+            @Param("inicioHoje") LocalDateTime inicioHoje,
+            @Param("fimHoje") LocalDateTime fimHoje,
+            @Param("inicioMes") LocalDateTime inicioMes,
+            @Param("fimMes") LocalDateTime fimMes
+    );
+
+    @Query("""
+            select orcamento.id as orcamentoId,
+                   orcamento.dtConclusao as dataConclusao,
+                   orcamento.servico.categoriaEspecifica.id as categoriaEspecificaId,
+                   orcamento.servico.categoriaEspecifica.nmCategoria as categoriaEspecifica,
+                   coalesce(sum(custo.vl_valor), orcamento.servico.vlServico, 0.0) as valor
+              from Orcamento orcamento
+              left join OrcamentoCusto custo on custo.orcamento.id = orcamento.id
+             where orcamento.servico.profissional.id = :profissionalId
+               and orcamento.orcamentoStatus.tipoOrcamentoStatus = :statusConcluido
+               and orcamento.dtConclusao >= :inicioPeriodo
+               and orcamento.dtConclusao < :fimPeriodo
+             group by orcamento.id,
+                      orcamento.dtConclusao,
+                      orcamento.servico.categoriaEspecifica.id,
+                      orcamento.servico.categoriaEspecifica.nmCategoria,
+                      orcamento.servico.vlServico
+             order by orcamento.dtConclusao
+            """)
+    List<DashboardServicoConcluido> buscarServicosConcluidosDashboard(
+            @Param("profissionalId") Long profissionalId,
+            @Param("statusConcluido") TipoOrcamentoStatus statusConcluido,
+            @Param("inicioPeriodo") LocalDateTime inicioPeriodo,
+            @Param("fimPeriodo") LocalDateTime fimPeriodo
+    );
+
+    interface DashboardContadores {
+        Long getOrcamentosPendentes();
+
+        Long getServicosHoje();
+
+        Long getSolicitacoesMes();
+
+        Long getSolicitacoesRespondidasMes();
+    }
+
+    interface DashboardServicoConcluido {
+        Long getOrcamentoId();
+
+        LocalDateTime getDataConclusao();
+
+        Long getCategoriaEspecificaId();
+
+        String getCategoriaEspecifica();
+
+        Double getValor();
+    }
 
 
     interface IntervaloOcupado {

@@ -13,11 +13,19 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
+import java.time.ZoneId;
+
 @Configuration
 @AllArgsConstructor
 public class EloConfiguration {
 
     private final UsuarioRepository usuarioRepository;
+
+    @Bean
+    Clock applicationClock() {
+        return Clock.system(ZoneId.of("America/Sao_Paulo"));
+    }
 
     @Bean
     PasswordEncoder passwordEncoder() {

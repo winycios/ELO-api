@@ -1,12 +1,14 @@
 package br.com.elo.eloapi.controller;
 
 import br.com.elo.eloapi.model.profissional.dto.ProfissionalRS;
+import br.com.elo.eloapi.model.profissional.dto.ProfissionalDashboardRS;
 import br.com.elo.eloapi.model.profissional.dto.ProfissionalUpdateDTO;
 import br.com.elo.eloapi.model.servico.dto.ServicoCreateRQ;
 import br.com.elo.eloapi.model.servico.dto.ServicoListaRS;
 import br.com.elo.eloapi.model.servico.dto.ServicoRS;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.service.ProfissionalService;
+import br.com.elo.eloapi.service.ProfissionalDashboardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,12 @@ import java.util.List;
 public class ProfissionalController {
 
     private final ProfissionalService profissionalService;
+    private final ProfissionalDashboardService profissionalDashboardService;
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<ProfissionalDashboardRS> buscarDashboard(@AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok(profissionalDashboardService.buscarDashboard(usuario));
+    }
 
     @PostMapping("/servico")
     public ResponseEntity<ServicoRS> salvarServico(@AuthenticationPrincipal Usuario usuario, @RequestBody @Valid ServicoCreateRQ servicoCreateRQ) {
