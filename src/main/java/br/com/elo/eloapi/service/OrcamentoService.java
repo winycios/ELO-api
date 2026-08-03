@@ -22,6 +22,7 @@ import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
 import br.com.elo.eloapi.model.servico.TipoServico;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.repository.*;
+import br.com.elo.eloapi.service.notificacao.OrcamentoNotificacaoService;
 import br.com.elo.eloapi.service.search.SearchOutboxService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
@@ -66,6 +67,7 @@ public class OrcamentoService {
     private final AvaliacaoReservaRepository avaliacaoReservaRepository;
     private final UsuarioRepository usuarioRepository;
     private final SearchOutboxService searchOutboxService;
+    private final OrcamentoNotificacaoService orcamentoNotificacaoService;
 
     @Transactional(readOnly = true)
     public HorariosDisponiveisRS buscarHorariosDisponiveis(Long servicoId, LocalDate dataReferencia) {
@@ -104,6 +106,7 @@ public class OrcamentoService {
 
         List<OrcamentoImagem> imagens = orcamentoImagemRepository.saveAll(dto.orcamentoImagemCreateRQList().stream().map(url -> OrcamentoMapper.toImagemEntity(url, orcamento)).toList());
 
+        orcamentoNotificacaoService.notificarSolicitacao(orcamento);
         redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, servico.getProfissional().getId()));
         return OrcamentoMapper.toResponse(orcamento, imagens, enderecoSnapshot);
     }
@@ -238,6 +241,7 @@ public class OrcamentoService {
                         .toList()
         );
 
+        orcamentoNotificacaoService.notificarOrcamentoFinal(orcamento);
         redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissional.getId()));
         redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, profissional.getId()));
         return montarDetalheProfissional(orcamento, custos);
@@ -249,6 +253,7 @@ public class OrcamentoService {
         validarStatusAtual(orcamento, TipoOrcamentoStatus.PENDENTE, "Somente solicitações pendentes podem ser recusadas.");
         registrarCancelamento(orcamento, TipoAutorCancelamento.PROFISSIONAL, profissional, dto.motivo(), dto.descricao());
         orcamentoRepository.save(orcamento);
+        orcamentoNotificacaoService.notificarRecusa(orcamento);
         redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, profissional.getId()));
         return montarDetalheProfissional(orcamento);
     }
@@ -264,6 +269,7 @@ public class OrcamentoService {
 
         registrarCancelamento(orcamento, TipoAutorCancelamento.USUARIO, cliente, dto.motivo(), dto.descricao());
         orcamentoRepository.save(orcamento);
+        orcamentoNotificacaoService.notificarCancelamentoCliente(orcamento);
         redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, orcamento.getServico().getProfissional().getId()));
         redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, orcamento.getServico().getProfissional().getId()));
         return montarDetalheCliente(orcamento);
@@ -281,6 +287,7 @@ public class OrcamentoService {
 
         registrarCancelamento(orcamento, TipoAutorCancelamento.SISTEMA, null, "expirado", "Orçamento cancelado automaticamente por expiração.");
         orcamentoRepository.save(orcamento);
+        orcamentoNotificacaoService.notificarExpiracao(orcamento);
         redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, orcamento.getServico().getProfissional().getId()));
         redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, orcamento.getServico().getProfissional().getId()));
     }
@@ -292,6 +299,7 @@ public class OrcamentoService {
         validarStatusAtual(orcamento, TipoOrcamentoStatus.ORCAMENTO_FINAL, "Somente um orçamento final aguardando aprovação pode ser aprovado.");
         orcamento.setOrcamentoStatus(buscarStatusConfigurado(TipoOrcamentoStatus.APROVADO));
         orcamentoRepository.save(orcamento);
+        orcamentoNotificacaoService.notificarAprovacao(orcamento);
         redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, orcamento.getServico().getProfissional().getId()));
 
         List<OrcamentoImagem> imagens = orcamentoImagemRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
@@ -325,6 +333,7 @@ public class OrcamentoService {
         orcamentoRepository.save(orcamento);
         profissionalRepository.save(profissional);
         searchOutboxService.solicitarReindexacao(profissional.getId());
+        orcamentoNotificacaoService.notificarConclusao(orcamento);
         redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissional.getId()));
         redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, profissional.getId()));
         return montarDetalheProfissional(orcamento);

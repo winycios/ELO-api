@@ -521,6 +521,102 @@ CREATE INDEX `idx_search_outbox_pendente` ON `database_elo`.`search_outbox` (`dt
 
 
 -- -----------------------------------------------------
+-- Table `database_elo`.`usuario_dispositivo`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `database_elo`.`usuario_dispositivo`
+(
+    `id_usuario_dispositivo` BIGINT       NOT NULL AUTO_INCREMENT,
+    `fk_usuario_id`          INT          NOT NULL,
+    `cd_dispositivo`         VARCHAR(100) NOT NULL,
+    `ds_identificador_fcm`   VARCHAR(512) NOT NULL,
+    `tp_identificador_fcm`   VARCHAR(10)  NOT NULL,
+    `tp_plataforma`          VARCHAR(10)  NOT NULL,
+    `st_ativo`               TINYINT(1)   NOT NULL DEFAULT 1,
+    `dt_criacao`             DATETIME(3)  NOT NULL,
+    `dt_atualizacao`         DATETIME(3)  NOT NULL,
+    PRIMARY KEY (`id_usuario_dispositivo`),
+    CONSTRAINT `fk_Usuario_Dispositivo_Usuario`
+        FOREIGN KEY (`fk_usuario_id`)
+        REFERENCES `database_elo`.`usuario` (`id_usuario`),
+    CONSTRAINT `uk_usuario_dispositivo_codigo`
+        UNIQUE (`fk_usuario_id`, `cd_dispositivo`),
+    CONSTRAINT `uk_usuario_dispositivo_fcm`
+        UNIQUE (`ds_identificador_fcm`)
+    )
+    ENGINE = InnoDB
+    DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE INDEX `idx_usuario_dispositivo_ativo` ON `database_elo`.`usuario_dispositivo` (`fk_usuario_id` ASC, `st_ativo` ASC) VISIBLE;
+
+
+-- -----------------------------------------------------
+-- Table `database_elo`.`notificacao`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `database_elo`.`notificacao`
+(
+    `id_notificacao`             BIGINT       NOT NULL AUTO_INCREMENT,
+    `fk_usuario_destinatario_id` INT          NOT NULL,
+    `fk_orcamento_id`            INT          NOT NULL,
+    `tp_notificacao`             VARCHAR(60)  NOT NULL,
+    `cd_chave_evento`            VARCHAR(160) NOT NULL,
+    `ds_titulo`                  VARCHAR(120) NOT NULL,
+    `ds_mensagem`                VARCHAR(500) NOT NULL,
+    `dt_criacao`                 DATETIME(3)  NOT NULL,
+    `dt_leitura`                 DATETIME(3)  NULL DEFAULT NULL,
+    PRIMARY KEY (`id_notificacao`),
+    CONSTRAINT `fk_Notificacao_Usuario`
+        FOREIGN KEY (`fk_usuario_destinatario_id`)
+        REFERENCES `database_elo`.`usuario` (`id_usuario`),
+    CONSTRAINT `fk_Notificacao_Orcamento`
+        FOREIGN KEY (`fk_orcamento_id`)
+        REFERENCES `database_elo`.`orcamento` (`id_orcamento`),
+    CONSTRAINT `uk_notificacao_chave_evento`
+        UNIQUE (`cd_chave_evento`)
+    )
+    ENGINE = InnoDB
+    DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE INDEX `idx_notificacao_listagem` ON `database_elo`.`notificacao` (`fk_usuario_destinatario_id` ASC, `id_notificacao` DESC) VISIBLE;
+CREATE INDEX `idx_notificacao_nao_lida` ON `database_elo`.`notificacao` (`fk_usuario_destinatario_id` ASC, `dt_leitura` ASC) VISIBLE;
+
+
+-- -----------------------------------------------------
+-- Table `database_elo`.`notificacao_outbox`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `database_elo`.`notificacao_outbox`
+(
+    `id_notificacao_outbox`     BIGINT        NOT NULL AUTO_INCREMENT,
+    `fk_notificacao_id`         BIGINT        NOT NULL,
+    `fk_usuario_dispositivo_id` BIGINT        NULL DEFAULT NULL,
+    `tp_canal`                  VARCHAR(20)   NOT NULL,
+    `tp_status`                 VARCHAR(20)   NOT NULL,
+    `cd_idempotencia`           VARCHAR(200)  NOT NULL,
+    `nr_tentativas`             INT           NOT NULL DEFAULT 0,
+    `dt_proxima_tentativa`      DATETIME(3)   NOT NULL,
+    `dt_processando_desde`      DATETIME(3)   NULL DEFAULT NULL,
+    `dt_processamento`          DATETIME(3)   NULL DEFAULT NULL,
+    `cd_mensagem_provedor`      VARCHAR(255)  NULL DEFAULT NULL,
+    `ds_ultimo_erro`            VARCHAR(1000) NULL DEFAULT NULL,
+    `nr_versao`                 BIGINT        NOT NULL DEFAULT 0,
+    `dt_criacao`                DATETIME(3)   NOT NULL,
+    PRIMARY KEY (`id_notificacao_outbox`),
+    CONSTRAINT `fk_Notificacao_Outbox_Notificacao`
+        FOREIGN KEY (`fk_notificacao_id`)
+        REFERENCES `database_elo`.`notificacao` (`id_notificacao`),
+    CONSTRAINT `fk_Notificacao_Outbox_Dispositivo`
+        FOREIGN KEY (`fk_usuario_dispositivo_id`)
+        REFERENCES `database_elo`.`usuario_dispositivo` (`id_usuario_dispositivo`),
+    CONSTRAINT `uk_notificacao_outbox_idempotencia`
+        UNIQUE (`cd_idempotencia`)
+    )
+    ENGINE = InnoDB
+    DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE INDEX `idx_notificacao_outbox_pendente` ON `database_elo`.`notificacao_outbox` (`tp_status` ASC, `dt_proxima_tentativa` ASC, `nr_tentativas` ASC, `id_notificacao_outbox` ASC) VISIBLE;
+CREATE INDEX `idx_notificacao_outbox_processando` ON `database_elo`.`notificacao_outbox` (`tp_status` ASC, `dt_processando_desde` ASC) VISIBLE;
+
+
+-- -----------------------------------------------------
 -- Table `database_elo`.`servico_disponibilidade`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `database_elo`.`servico_disponibilidade`
