@@ -21,6 +21,9 @@ public record UsuarioEditRQ(
         String telContato,
 
         @NotBlank
-        String telContatoZap
+        String telContatoZap,
+
+        @Size(max = 500)
+        String chaveImagem
 ) {
 }

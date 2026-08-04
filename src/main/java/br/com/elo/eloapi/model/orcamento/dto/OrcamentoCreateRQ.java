@@ -20,7 +20,7 @@ public record OrcamentoCreateRQ(
         String descricao,
 
         @Size(max = 3)
-        List<@NotBlank @Size(max = 500) String> orcamentoImagemCreateRQList,
+        List<@NotBlank @Size(max = 500) String> chavesImagens,
 
         @NotNull
         @Future

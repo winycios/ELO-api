@@ -18,6 +18,8 @@ import br.com.elo.eloapi.model.servico.mapper.ServicoMapper;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.repository.*;
 import br.com.elo.eloapi.service.search.SearchOutboxService;
+import br.com.elo.eloapi.model.storage.EscopoImagem;
+import br.com.elo.eloapi.service.storage.ImagemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +42,15 @@ public class ProfissionalService {
     private final AreaAtendimentoRepository areaAtendimentoRepository;
     private final RedisStore redisStore;
     private final SearchOutboxService searchOutboxService;
+    private final ImagemService imagemService;
+
+    private UnaryOperator<String> resolverImagemServico() {
+        return imagemService.resolvedorDeUrl(EscopoImagem.SERVICO);
+    }
+
+    private UnaryOperator<String> resolverImagemPerfil() {
+        return imagemService.resolvedorDeUrl(EscopoImagem.PERFIL);
+    }
 
 
     @Transactional
@@ -69,7 +81,7 @@ public class ProfissionalService {
         redisStore.deletarNoCache(String.format(RedisStore.KEY_PROFESSIONAL_DETAILS_PATTERN, profissional.getId()));
         redisStore.deletarNoCache(String.format(RedisStore.KEY_AVAILABLE_HOURS_PATTERN, profissional.getId()));
         searchOutboxService.solicitarReindexacao(profissional.getId());
-        return ServicoMapper.toResponse(servico, imagens, disponibilidades);
+        return ServicoMapper.toResponse(servico, imagens, disponibilidades, resolverImagemServico());
     }
 
     @Transactional(readOnly = true)
@@ -99,6 +111,9 @@ public class ProfissionalService {
     @Transactional
     public ProfissionalRS salvarProfissional(Usuario usuario, ProfissionalUpdateDTO profissionalUpdateDTO) {
         Profissional profissional = buscarProfissional(usuario);
+        if (profissionalUpdateDTO.chaveImagem() != null) {
+            imagemService.validarChave(EscopoImagem.PERFIL, profissionalUpdateDTO.chaveImagem());
+        }
         ProfissionalMapper.toUpdateEntity(profissional, profissionalUpdateDTO);
         Profissional profAtualizado = profissionalRepository.save(profissional);
 
@@ -112,7 +127,7 @@ public class ProfissionalService {
         AreaAtendimento areaAtualizada = areaAtendimentoRepository.save(areaAtendimento);
         redisStore.deletarNoCache(String.format(RedisStore.KEY_PROFESSIONAL_DETAILS_PATTERN, profissional.getId()));
         searchOutboxService.solicitarReindexacao(profissional.getId());
-        return ProfissionalMapper.toResponse(profAtualizado, areaAtualizada);
+        return ProfissionalMapper.toResponse(profAtualizado, areaAtualizada, resolverImagemPerfil());
     }
 
     public Profissional buscarProfissional(Usuario usuario) {
@@ -121,10 +136,12 @@ public class ProfissionalService {
     }
 
     private List<ServicoImagem> salvarImagens(Servico servico, List<ServicoImagemCreateRQ> dtos) {
+        imagemService.validarChaves(EscopoImagem.SERVICO, dtos.stream().map(ServicoImagemCreateRQ::chaveImagem).toList());
+
         return servicoImagemRepository.saveAll(dtos.stream().map(dto -> {
             ServicoImagem imagem = new ServicoImagem();
             imagem.setServico(servico);
-            imagem.setUrl(dto.url());
+            imagem.setChave(dto.chaveImagem());
             imagem.setOrdem(dto.ordem());
             return imagem;
         }).toList());
@@ -169,7 +186,8 @@ public class ProfissionalService {
         return ServicoMapper.toResponse(
                 servico,
                 servicoImagemRepository.findAllByServicoIdOrderByOrdem(servico.getId()),
-                servicoDisponibilidadeRepository.findAllByServicoIdOrderByDiaSemanaAscHrInicioAsc(servico.getId())
+                servicoDisponibilidadeRepository.findAllByServicoIdOrderByDiaSemanaAscHrInicioAsc(servico.getId()),
+                resolverImagemServico()
         );
     }
 
@@ -191,6 +209,6 @@ public class ProfissionalService {
 
     public ProfissionalRS buscarProfissionalSessao(Usuario usuario) {
         Profissional profissional = buscarProfissional(usuario);
-        return ProfissionalMapper.toResponse(profissional, areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissional.getId()).orElse(null));
+        return ProfissionalMapper.toResponse(profissional, areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissional.getId()).orElse(null), resolverImagemPerfil());
     }
 }

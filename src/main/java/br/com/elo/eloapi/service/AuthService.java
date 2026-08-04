@@ -15,6 +15,8 @@ import br.com.elo.eloapi.repository.ProfissionalRepository;
 import br.com.elo.eloapi.repository.RedisStore;
 import br.com.elo.eloapi.repository.UsuarioRepository;
 import br.com.elo.eloapi.service.search.SearchOutboxService;
+import br.com.elo.eloapi.model.storage.EscopoImagem;
+import br.com.elo.eloapi.service.storage.ImagemService;
 import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,6 +40,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final RedisStore redisStore;
     private final SearchOutboxService searchOutboxService;
+    private final ImagemService imagemService;
 
     @Value("${security.jwt.access-token.expiration}")
     private long accessTokenExpiration;
@@ -48,7 +51,8 @@ public class AuthService {
 
     public AuthService(UsuarioRepository usuarioRepository, ProfissionalRepository profissionalRepository,
                        AuthenticationManager authenticationManager, UsuarioMapper usuarioMapper,
-                       JwtService jwtService, RedisStore redisStore, SearchOutboxService searchOutboxService) {
+                       JwtService jwtService, RedisStore redisStore, SearchOutboxService searchOutboxService,
+                       ImagemService imagemService) {
         this.usuarioRepository = usuarioRepository;
         this.profissionalRepository = profissionalRepository;
         this.authenticationManager = authenticationManager;
@@ -56,6 +60,7 @@ public class AuthService {
         this.jwtService = jwtService;
         this.redisStore = redisStore;
         this.searchOutboxService = searchOutboxService;
+        this.imagemService = imagemService;
     }
 
     @Transactional
@@ -117,6 +122,15 @@ public class AuthService {
             redisStore.salvarNoCache(String.format(RedisStore.KEY_TEMPLATE_AUTH, profissional.getUsuario().getId()), deviceCode, data, Duration.ofMillis(refreshTokenExpiration));
         }
 
-        return new LoginResponseRS(profissional.getId(), accessToken, refreshToken, profissional.getUsuario().nomeCompleto(), profissional.getUsuario().getUriPerfil(), profissional.getUriPerfil(), profissional.getStHabilitado(), profissional.getUsuario().getStHabilitado());
+        return new LoginResponseRS(
+                profissional.getId(),
+                accessToken,
+                refreshToken,
+                profissional.getUsuario().nomeCompleto(),
+                imagemService.urlLeitura(EscopoImagem.PERFIL, profissional.getUsuario().getUriPerfil()),
+                imagemService.urlLeitura(EscopoImagem.PERFIL, profissional.getUriPerfil()),
+                profissional.getStHabilitado(),
+                profissional.getUsuario().getStHabilitado()
+        );
     }
 }

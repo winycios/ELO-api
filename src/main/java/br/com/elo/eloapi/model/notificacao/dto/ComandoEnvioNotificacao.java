@@ -1,4 +1,4 @@
-package br.com.elo.eloapi.service.notificacao.canal;
+package br.com.elo.eloapi.model.notificacao.dto;
 
 import br.com.elo.eloapi.model.notificacao.CanalNotificacao;
 import br.com.elo.eloapi.model.notificacao.TipoIdentificadorFcm;

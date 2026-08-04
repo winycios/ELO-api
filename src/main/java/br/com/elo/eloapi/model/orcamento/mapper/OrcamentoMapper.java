@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 
 import static br.com.elo.eloapi.Util.Utils.calcularDistancia;
 
@@ -40,8 +41,8 @@ public final class OrcamentoMapper {
         return orcamento;
     }
 
-    public static OrcamentoImagem toImagemEntity(String url, Orcamento orcamento) {
-        return new OrcamentoImagem(null, orcamento, url.trim());
+    public static OrcamentoImagem toImagemEntity(String chave, Orcamento orcamento) {
+        return new OrcamentoImagem(null, orcamento, chave.trim());
     }
 
     public static OrcamentoEndereco toOrcamentoEnderecoEntity(Endereco endereco, Orcamento orcamento) {
@@ -79,10 +80,16 @@ public final class OrcamentoMapper {
         return endereco;
     }
 
+    /**
+     * @param resolverImagem converte a chave guardada no banco na URL assinada
+     *                       de leitura. Recebido como parâmetro porque o mapper
+     *                       é estático e não injeta beans.
+     */
     public static OrcamentoRS toResponse(
             Orcamento orcamento,
             List<OrcamentoImagem> imagens,
-            OrcamentoEndereco endereco
+            OrcamentoEndereco endereco,
+            UnaryOperator<String> resolverImagem
     ) {
         return new OrcamentoRS(
                 orcamento.getId(),
@@ -94,12 +101,16 @@ public final class OrcamentoMapper {
                 orcamento.getDtPreferidoSolicitado(),
                 orcamento.getDtInicioProposto(),
                 orcamento.getDtFimProposto(),
-                imagens.stream().map(OrcamentoImagem::getUrl).toList(),
+                resolverImagens(imagens, resolverImagem),
                 endereco == null ? null : toEnderecoResponse(endereco)
         );
     }
 
-    public static OrcamentoListagemRS toListagemResponse(Orcamento orcamento, boolean avaliado) {
+    private static List<String> resolverImagens(List<OrcamentoImagem> imagens, UnaryOperator<String> resolverImagem) {
+        return imagens.stream().map(OrcamentoImagem::getChave).map(resolverImagem).filter(Objects::nonNull).toList();
+    }
+
+    public static OrcamentoListagemRS toListagemResponse(Orcamento orcamento, boolean avaliado, UnaryOperator<String> resolverImagemPerfil) {
         Servico servico = orcamento.getServico();
         Profissional profissional = servico.getProfissional();
         Usuario usuarioProfissional = profissional.getUsuario();
@@ -112,7 +123,7 @@ public final class OrcamentoMapper {
                 profissional.getId(),
                 possuiOrcamentoFinal(orcamento) ? orcamento.getId() : null,
                 usuarioProfissional.nomeCompleto(),
-                fotoProfissional,
+                resolverImagemPerfil.apply(fotoProfissional),
                 servico.getCategoriaEspecifica().getNmCategoria(),
                 orcamento.getDsDescricao(),
                 status.getDescricao(),
@@ -124,7 +135,8 @@ public final class OrcamentoMapper {
             Orcamento orcamento,
             AreaAtendimento areaAtendimento,
             List<OrcamentoCusto> custos,
-            boolean avaliado
+            boolean avaliado,
+            UnaryOperator<String> resolverImagemPerfil
     ) {
         Servico servico = orcamento.getServico();
         Usuario cliente = orcamento.getUsuario();
@@ -134,7 +146,7 @@ public final class OrcamentoMapper {
                 orcamento.getId(),
                 servico.getId(),
                 cliente.nomeCompleto(),
-                cliente.getUriPerfil(),
+                resolverImagemPerfil.apply(cliente.getUriPerfil()),
                 cliente.getQtAvaliacaoGeral(),
                 servico.getCategoriaEspecifica().getNmCategoria(),
                 orcamento.getDsDescricao(),
@@ -150,7 +162,7 @@ public final class OrcamentoMapper {
         );
     }
 
-    public static OrcamentoDetalheRS toDetalheResponse(Orcamento orcamento, List<OrcamentoImagem> imagens, OrcamentoEndereco endereco, List<OrcamentoCusto> custos) {
+    public static OrcamentoDetalheRS toDetalheResponse(Orcamento orcamento, List<OrcamentoImagem> imagens, OrcamentoEndereco endereco, List<OrcamentoCusto> custos, UnaryOperator<String> resolverImagem, UnaryOperator<String> resolverImagemPerfil) {
         Servico servico = orcamento.getServico();
         Profissional profissional = servico.getProfissional();
         Usuario usuarioProfissional = profissional.getUsuario();
@@ -168,7 +180,7 @@ public final class OrcamentoMapper {
                 new OrcamentoDetalheRS.ProfissionalOrcamentoRS(
                         profissional.getId(),
                         usuarioProfissional.nomeCompleto(),
-                        fotoProfissional,
+                        resolverImagemPerfil.apply(fotoProfissional),
                         servico.getCategoriaEspecifica().getNmCategoria(),
                         usuarioProfissional.getQtAvaliacaoGeral(),
                         usuarioProfissional.getQtAvalicaoes(),
@@ -191,7 +203,7 @@ public final class OrcamentoMapper {
                                 : servico.getTipoServico().getTipoServico(),
                         orcamento.getDtPreferidoSolicitado(),
                         valorExibicao,
-                        imagens.stream().map(OrcamentoImagem::getUrl).toList(),
+                        resolverImagens(imagens, resolverImagem),
                         endereco == null ? null : toDetalheEnderecoResponse(endereco)
                 );
 
@@ -238,7 +250,7 @@ public final class OrcamentoMapper {
         );
     }
 
-    public static OrcamentoDetalheProfissionalRS toDetalheProfissionalResponse(Orcamento orcamento, List<OrcamentoImagem> imagens, OrcamentoEndereco endereco, List<OrcamentoCusto> custos, AreaAtendimento areaAtendimento) {
+    public static OrcamentoDetalheProfissionalRS toDetalheProfissionalResponse(Orcamento orcamento, List<OrcamentoImagem> imagens, OrcamentoEndereco endereco, List<OrcamentoCusto> custos, AreaAtendimento areaAtendimento, UnaryOperator<String> resolverImagem, UnaryOperator<String> resolverImagemPerfil) {
         Servico servico = orcamento.getServico();
         Usuario cliente = orcamento.getUsuario();
         TipoOrcamentoStatus status = orcamento.getOrcamentoStatus().getTipoOrcamentoStatus();
@@ -247,7 +259,7 @@ public final class OrcamentoMapper {
                 new OrcamentoDetalheProfissionalRS.ClienteOrcamentoRS(
                         cliente.getId(),
                         cliente.nomeCompleto(),
-                        cliente.getUriPerfil(),
+                        resolverImagemPerfil.apply(cliente.getUriPerfil()),
                         cliente.getQtAvaliacaoGeral(),
                         cliente.getQtAvalicaoes(),
                         cliente.getStHabilitado(),
@@ -268,7 +280,7 @@ public final class OrcamentoMapper {
                                 : servico.getTipoServico().getTipoServico(),
                         orcamento.getDtPreferidoSolicitado(),
                         calcularDistancia(cliente, areaAtendimento, toEnderecoEntity(endereco)),
-                        imagens.stream().map(OrcamentoImagem::getUrl).toList(),
+                        resolverImagens(imagens, resolverImagem),
                         endereco == null ? null : toDetalheProfissionalEnderecoResponse(endereco)
                 );
 

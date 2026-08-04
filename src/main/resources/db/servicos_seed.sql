@@ -135,7 +135,7 @@ VALUES
     ('prof3_informatica', 'https://images.unsplash.com/photo-1611396000732-f8c9a933424f?auto=format&fit=crop&w=1200&q=80', 1),
     ('prof3_informatica', 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1200&q=80', 2);
 
-INSERT INTO servico_imagem (fk_id_servico, url_imagem, nr_ordem)
+INSERT INTO servico_imagem (fk_id_servico, ds_chave_imagem, nr_ordem)
 SELECT
     servico.id_servico,
     imagem.url,

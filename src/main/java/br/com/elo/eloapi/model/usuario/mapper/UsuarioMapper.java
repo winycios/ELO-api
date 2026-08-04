@@ -8,14 +8,16 @@ import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.function.UnaryOperator;
+
 @Component
 @AllArgsConstructor
 public final class UsuarioMapper {
 
     private final PasswordEncoder passwordEncoder;
 
-    public static UsuarioRS toResponse(Usuario usuario) {
-        return new UsuarioRS(usuario.getId(), usuario.nomeCompleto(), usuario.getEmail(), usuario.getTelCelular(), usuario.getTelWhats(), 1L, 2L, 4.9);
+    public static UsuarioRS toResponse(Usuario usuario, UnaryOperator<String> resolverImagem) {
+        return new UsuarioRS(usuario.getId(), usuario.nomeCompleto(), resolverImagem.apply(usuario.getUriPerfil()), usuario.getEmail(), usuario.getTelCelular(), usuario.getTelWhats(), 1L, 2L, 4.9);
     }
 
     public Usuario toEntity(UsuarioCreateRQ dto) {

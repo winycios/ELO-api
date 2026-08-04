@@ -3,7 +3,6 @@ package br.com.elo.eloapi.service;
 import br.com.elo.eloapi.exception.BadRequestException;
 import br.com.elo.eloapi.exception.ConflictException;
 import br.com.elo.eloapi.exception.ResourceNotFound;
-import br.com.elo.eloapi.exception.UnauthorizedException;
 import br.com.elo.eloapi.model.areaAtendimento.AreaAtendimento;
 import br.com.elo.eloapi.model.avaliacao.AvaliacaoReserva;
 import br.com.elo.eloapi.model.avaliacao.dto.AvaliacaoOrcamentoRQ;
@@ -16,7 +15,6 @@ import br.com.elo.eloapi.model.orcamentoStatus.OrcamentoStatus;
 import br.com.elo.eloapi.model.orcamentoStatus.TipoOrcamentoStatus;
 import br.com.elo.eloapi.model.profissional.Profissional;
 import br.com.elo.eloapi.model.publicacao.dto.CursorPageRS;
-import br.com.elo.eloapi.model.redis.RefreshTokenData;
 import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
 import br.com.elo.eloapi.model.servico.TipoServico;
@@ -24,10 +22,10 @@ import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.repository.*;
 import br.com.elo.eloapi.service.notificacao.OrcamentoNotificacaoService;
 import br.com.elo.eloapi.service.search.SearchOutboxService;
+import br.com.elo.eloapi.model.storage.EscopoImagem;
+import br.com.elo.eloapi.service.storage.ImagemService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -39,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 @Service
@@ -68,6 +67,20 @@ public class OrcamentoService {
     private final UsuarioRepository usuarioRepository;
     private final SearchOutboxService searchOutboxService;
     private final OrcamentoNotificacaoService orcamentoNotificacaoService;
+    private final ImagemService imagemService;
+
+    /**
+     * As imagens do orçamento ficam no bucket privado: só o cliente e o
+     * profissional envolvidos podem vê-las, através de URL assinada gerada a
+     * cada resposta.
+     */
+    private UnaryOperator<String> resolverImagemOrcamento() {
+        return imagemService.resolvedorDeUrl(EscopoImagem.ORCAMENTO);
+    }
+
+    private UnaryOperator<String> resolverImagemPerfil() {
+        return imagemService.resolvedorDeUrl(EscopoImagem.PERFIL);
+    }
 
     @Transactional(readOnly = true)
     public HorariosDisponiveisRS buscarHorariosDisponiveis(Long servicoId, LocalDate dataReferencia) {
@@ -104,11 +117,12 @@ public class OrcamentoService {
 
         OrcamentoEndereco enderecoSnapshot = endereco == null ? null : orcamentoEnderecoRepository.save(OrcamentoMapper.toOrcamentoEnderecoEntity(endereco, orcamento));
 
-        List<OrcamentoImagem> imagens = orcamentoImagemRepository.saveAll(dto.orcamentoImagemCreateRQList().stream().map(url -> OrcamentoMapper.toImagemEntity(url, orcamento)).toList());
+        imagemService.validarChaves(EscopoImagem.ORCAMENTO, dto.chavesImagens());
+        List<OrcamentoImagem> imagens = orcamentoImagemRepository.saveAll(dto.chavesImagens().stream().map(chave -> OrcamentoMapper.toImagemEntity(chave, orcamento)).toList());
 
         orcamentoNotificacaoService.notificarSolicitacao(orcamento);
         redisStore.deletarHSet(String.format(RedisStore.KEY_TEMPLATE_PROFESSIONAL_CALENDAR, servico.getProfissional().getId()));
-        return OrcamentoMapper.toResponse(orcamento, imagens, enderecoSnapshot);
+        return OrcamentoMapper.toResponse(orcamento, imagens, enderecoSnapshot, resolverImagemOrcamento());
     }
 
     @Transactional(readOnly = true)
@@ -125,7 +139,8 @@ public class OrcamentoService {
                 pagina.stream()
                         .map(orcamento -> OrcamentoMapper.toListagemResponse(
                                 orcamento,
-                                estaConcluido(orcamento) && orcamentosAvaliados.contains(orcamento.getId())
+                                estaConcluido(orcamento) && orcamentosAvaliados.contains(orcamento.getId()),
+                                resolverImagemPerfil()
                         ))
                         .toList(),
                 nextCursor,
@@ -163,7 +178,8 @@ public class OrcamentoService {
                     orcamento,
                     areaAtendimento,
                     custosPorOrcamento.getOrDefault(orcamento.getId(), List.of()),
-                    estaConcluido(orcamento) && orcamentosAvaliados.contains(orcamento.getId())
+                    estaConcluido(orcamento) && orcamentosAvaliados.contains(orcamento.getId()),
+                    resolverImagemPerfil()
             );
             LocalDateTime dataAgenda = orcamento.getDtInicioProposto() != null ? orcamento.getDtInicioProposto() : orcamento.getDtPreferidoSolicitado();
             agendaPorDia.get(dataAgenda.toLocalDate().toString()).add(response);
@@ -191,7 +207,8 @@ public class OrcamentoService {
                                 orcamento,
                                 areaAtendimento,
                                 custosPorOrcamento.getOrDefault(orcamento.getId(), List.of()),
-                                estaConcluido(orcamento) && orcamentosAvaliados.contains(orcamento.getId())))
+                                estaConcluido(orcamento) && orcamentosAvaliados.contains(orcamento.getId()),
+                                resolverImagemPerfil()))
                         .toList(),
                 nextCursor,
                 hasNext
@@ -205,7 +222,7 @@ public class OrcamentoService {
         OrcamentoEndereco endereco = orcamentoEnderecoRepository.findFirstByOrcamentoIdOrderByIdAsc(orcamentoId).orElse(null);
         List<OrcamentoCusto> custos = orcamentoCustoRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
 
-        return OrcamentoMapper.toDetalheResponse(orcamento, imagens, endereco, custos);
+        return OrcamentoMapper.toDetalheResponse(orcamento, imagens, endereco, custos, resolverImagemOrcamento(), resolverImagemPerfil());
     }
 
     @Transactional(readOnly = true)
@@ -305,7 +322,7 @@ public class OrcamentoService {
         List<OrcamentoImagem> imagens = orcamentoImagemRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
         OrcamentoEndereco endereco = orcamentoEnderecoRepository.findFirstByOrcamentoIdOrderByIdAsc(orcamentoId).orElse(null);
         List<OrcamentoCusto> custos = orcamentoCustoRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
-        return OrcamentoMapper.toDetalheResponse(orcamento, imagens, endereco, custos);
+        return OrcamentoMapper.toDetalheResponse(orcamento, imagens, endereco, custos, resolverImagemOrcamento(), resolverImagemPerfil());
     }
 
     @Transactional
@@ -360,7 +377,7 @@ public class OrcamentoService {
         List<OrcamentoImagem> imagens = orcamentoImagemRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
         OrcamentoEndereco endereco = orcamentoEnderecoRepository.findFirstByOrcamentoIdOrderByIdAsc(orcamentoId).orElse(null);
         List<OrcamentoCusto> custos = orcamentoCustoRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
-        return OrcamentoMapper.toDetalheResponse(orcamento, imagens, endereco, custos);
+        return OrcamentoMapper.toDetalheResponse(orcamento, imagens, endereco, custos, resolverImagemOrcamento(), resolverImagemPerfil());
     }
 
     private void registrarCancelamento(Orcamento orcamento, TipoAutorCancelamento autor, Usuario usuarioResponsavel, String motivo, String descricao) {
@@ -445,7 +462,7 @@ public class OrcamentoService {
         List<OrcamentoImagem> imagens = orcamentoImagemRepository.findAllByOrcamentoIdOrderByIdAsc(orcamentoId);
         OrcamentoEndereco endereco = orcamentoEnderecoRepository.findFirstByOrcamentoIdOrderByIdAsc(orcamentoId).orElse(null);
         AreaAtendimento areaAtendimento = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(orcamento.getServico().getProfissional().getId()).orElse(null);
-        return OrcamentoMapper.toDetalheProfissionalResponse(orcamento, imagens, endereco, custos, areaAtendimento);
+        return OrcamentoMapper.toDetalheProfissionalResponse(orcamento, imagens, endereco, custos, areaAtendimento, resolverImagemOrcamento(), resolverImagemPerfil());
     }
 
     private void validarIntervaloProposto(Orcamento orcamento, LocalDateTime inicioProposto, LocalDateTime fimProposto) {

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 @Component
 @AllArgsConstructor
@@ -25,26 +26,30 @@ public final class PublicacaoMapper {
     }
 
     public static PublicacaoImagem toImageEntity(PublicacaoImagemRQ dto, Publicacao publicacao) {
-        return new PublicacaoImagem(null, publicacao, dto.urlImagem(), dto.nrOrdem());
+        return new PublicacaoImagem(null, publicacao, dto.chaveImagem(), dto.nrOrdem());
     }
 
-    public static PublicacaoImagemRS toImageResponse(PublicacaoImagem imagem) {
-        return new PublicacaoImagemRS(imagem.getId(), imagem.getUrl(), imagem.getOrdem());
+    public static PublicacaoImagemRS toImageResponse(PublicacaoImagem imagem, UnaryOperator<String> resolverImagem) {
+        return new PublicacaoImagemRS(imagem.getId(), resolverImagem.apply(imagem.getChave()), imagem.getOrdem());
     }
 
     public static PublicacaoFeedRS toFeedResponse(
             Publicacao publicacao,
             Map<Long, List<PublicacaoImagemRS>> imagens,
             Map<Long, PublicacaoCurtida> curtidas,
-            Map<Long, Long> comentarios) {
+            Map<Long, Long> comentarios,
+            UnaryOperator<String> resolverImagemPerfil) {
         Usuario usuario = publicacao.getProfissional().getUsuario();
+        String fotoPerfil = publicacao.getProfissional().getUriPerfil() != null
+                ? publicacao.getProfissional().getUriPerfil()
+                : usuario.getUriPerfil();
         PublicacaoCurtida curtida = curtidas.getOrDefault(
                 publicacao.getId(), new PublicacaoCurtida(publicacao.getId(), 0L, false));
 
         return new PublicacaoFeedRS(
                 publicacao.getId(), publicacao.getDsPublicacao(), publicacao.getDtPublicacao(),
                 publicacao.getCategoriaEspecifica().getId(), publicacao.getCategoriaEspecifica().getNmCategoria(),
-                publicacao.getProfissional().getId(), usuario.nomeCompleto(), usuario.getUriPerfil(),
+                publicacao.getProfissional().getId(), usuario.nomeCompleto(), resolverImagemPerfil.apply(fotoPerfil),
                 imagens.getOrDefault(publicacao.getId(), List.of()),
                 curtida.totalCurtida(),
                 comentarios.getOrDefault(publicacao.getId(), 0L),
@@ -52,11 +57,11 @@ public final class PublicacaoMapper {
         );
     }
 
-    public static ComentarioRS toCommentResponse(PublicacaoComentario comentario) {
+    public static ComentarioRS toCommentResponse(PublicacaoComentario comentario, UnaryOperator<String> resolverImagemPerfil) {
         Usuario usuario = comentario.getUsuario();
         return new ComentarioRS(
                 comentario.getId(), comentario.getTexto(), comentario.getDataComentario(),
                 comentario.getComentarioPai() == null ? null : comentario.getComentarioPai().getId(),
-                usuario.getId(), usuario.nomeCompleto(), usuario.getUriPerfil());
+                usuario.getId(), usuario.nomeCompleto(), resolverImagemPerfil.apply(usuario.getUriPerfil()));
     }
 }

@@ -1,4 +1,4 @@
-package br.com.elo.eloapi.service.notificacao.canal;
+package br.com.elo.eloapi.model.notificacao.dto;
 
 public record ResultadoEnvioNotificacao(String codigoMensagemProvedor) {
 }

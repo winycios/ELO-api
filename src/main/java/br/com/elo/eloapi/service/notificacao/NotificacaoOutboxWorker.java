@@ -1,5 +1,9 @@
 package br.com.elo.eloapi.service.notificacao;
 
+import br.com.elo.eloapi.exception.FalhaPermanenteEnvioException;
+import br.com.elo.eloapi.exception.FalhaTemporariaEnvioException;
+import br.com.elo.eloapi.model.notificacao.dto.ComandoEnvioNotificacao;
+import br.com.elo.eloapi.model.notificacao.dto.ResultadoEnvioNotificacao;
 import br.com.elo.eloapi.service.notificacao.canal.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

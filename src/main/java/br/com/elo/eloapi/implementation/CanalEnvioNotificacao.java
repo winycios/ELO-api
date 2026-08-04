@@ -1,6 +1,8 @@
-package br.com.elo.eloapi.service.notificacao.canal;
+package br.com.elo.eloapi.implementation;
 
 import br.com.elo.eloapi.model.notificacao.CanalNotificacao;
+import br.com.elo.eloapi.model.notificacao.dto.ComandoEnvioNotificacao;
+import br.com.elo.eloapi.model.notificacao.dto.ResultadoEnvioNotificacao;
 
 public interface CanalEnvioNotificacao {
 

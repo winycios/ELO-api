@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
@@ -101,6 +102,19 @@ public class CustomExceptionHandler {
         HttpStatus status = HttpStatus.BAD_REQUEST;
         ModelError err = new ModelError(Instant.now(), status.value(), status.toString(), e.getMessage(),
                 request.getRequestURI());
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ModelError> exceptionPersonalized(MaxUploadSizeExceededException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+        ModelError err = new ModelError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "A imagem enviada excede o tamanho máximo permitido.",
+                request.getRequestURI()
+        );
         return ResponseEntity.status(status).body(err);
     }
 

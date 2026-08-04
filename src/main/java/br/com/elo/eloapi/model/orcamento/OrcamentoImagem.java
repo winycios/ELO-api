@@ -22,6 +22,7 @@ public class OrcamentoImagem {
     @JoinColumn(name = "fk_id_orcamento", nullable = false)
     private Orcamento orcamento;
 
-    @Column(name = "url_imagem", nullable = false, length = 500)
-    private String url;
+    /** Chave do objeto no bucket privado. A URL assinada é gerada na leitura. */
+    @Column(name = "ds_chave_imagem", nullable = false, length = 500)
+    private String chave;
 }

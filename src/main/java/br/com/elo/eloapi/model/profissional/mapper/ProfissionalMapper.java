@@ -8,6 +8,8 @@ import br.com.elo.eloapi.model.profissional.dto.ProfissionalUpdateDTO;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.function.UnaryOperator;
+
 @Component
 @AllArgsConstructor
 public final class ProfissionalMapper {
@@ -15,7 +17,9 @@ public final class ProfissionalMapper {
     public static void toUpdateEntity(Profissional profissional, ProfissionalUpdateDTO dto) {
 
         profissional.setDsApresentacao(dto.apresentacao());
-        profissional.setUriPerfil(dto.uriPerfil());
+        if (dto.chaveImagem() != null) {
+            profissional.setUriPerfil(dto.chaveImagem());
+        }
         profissional.setDsEspecialidades(dto.especialidades());
     }
 
@@ -25,14 +29,14 @@ public final class ProfissionalMapper {
         return profissional;
     }
 
-    public static ProfissionalRS toResponse(Profissional profissional, AreaAtendimento areaAtendimento) {
+    public static ProfissionalRS toResponse(Profissional profissional, AreaAtendimento areaAtendimento, UnaryOperator<String> resolverImagem) {
         return new ProfissionalRS(
                 profissional.getId(),
                 profissional.getQtServicoConcluido(),
                 null,
                 profissional.getStDisponivel(),
                 profissional.getDsApresentacao(),
-                profissional.getUriPerfil(),
+                resolverImagem.apply(profissional.getUriPerfil()),
                 profissional.getDsEspecialidades(),
                 areaAtendimento == null ? null : AreaAtendimentoMapper.toResponse(areaAtendimento)
         );

@@ -86,12 +86,12 @@ BEGIN
             ELSE 'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1200&q=80'
         END;
 
-        INSERT INTO publicacao_imagem (fk_publicacao_id, url_imagem, nr_ordem)
+        INSERT INTO publicacao_imagem (fk_publicacao_id, ds_chave_imagem, nr_ordem)
         VALUES (v_publicacao_id, v_imagem_url, 1);
 
         -- Algumas publicacoes possuem uma segunda foto para testar carrossel/ordenacao.
         IF v_numero MOD 4 = 0 THEN
-            INSERT INTO publicacao_imagem (fk_publicacao_id, url_imagem, nr_ordem)
+            INSERT INTO publicacao_imagem (fk_publicacao_id, ds_chave_imagem, nr_ordem)
             VALUES (
                 v_publicacao_id,
                 'https://images.unsplash.com/photo-1505798577917-a65157d3320a?auto=format&fit=crop&w=1200&q=80',

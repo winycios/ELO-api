@@ -1,9 +1,10 @@
 package br.com.elo.eloapi.service.notificacao;
 
+import br.com.elo.eloapi.exception.FalhaPermanenteEnvioException;
 import br.com.elo.eloapi.exception.ResourceNotFound;
 import br.com.elo.eloapi.model.notificacao.*;
 import br.com.elo.eloapi.repository.NotificacaoOutboxRepository;
-import br.com.elo.eloapi.service.notificacao.canal.ComandoEnvioNotificacao;
+import br.com.elo.eloapi.model.notificacao.dto.ComandoEnvioNotificacao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -50,7 +51,7 @@ public class NotificacaoOutboxService {
         Notificacao notificacao = entrega.getNotificacao();
         DispositivoUsuario dispositivo = entrega.getDispositivo();
         if (entrega.getCanal() == CanalNotificacao.PUSH && (dispositivo == null || !Boolean.TRUE.equals(dispositivo.getAtivo()))) {
-            throw new br.com.elo.eloapi.service.notificacao.canal.FalhaPermanenteEnvioException("Dispositivo de destino está inativo.");
+            throw new FalhaPermanenteEnvioException("Dispositivo de destino está inativo.");
         }
 
         Map<String, String> dados = Map.of("tipo", notificacao.getTipo().name(), "orcamentoId", notificacao.getOrcamento().getId().toString(), "notificacaoId", notificacao.getId().toString(), "rota", "/orcamentos/" + notificacao.getOrcamento().getId(), "versao", "1");

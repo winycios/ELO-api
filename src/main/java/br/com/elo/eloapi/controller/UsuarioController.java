@@ -7,7 +7,6 @@ import br.com.elo.eloapi.model.endereco.mapper.EnderecoMapper;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.model.usuario.dto.UsuarioEditRQ;
 import br.com.elo.eloapi.model.usuario.dto.UsuarioRS;
-import br.com.elo.eloapi.model.usuario.mapper.UsuarioMapper;
 import br.com.elo.eloapi.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +35,7 @@ public class UsuarioController {
 
     @GetMapping(value = "/perfil")
     public ResponseEntity<UsuarioRS> listarPerfil(@AuthenticationPrincipal Usuario usuario) {
-        return usuarioService.pegarPerfil(usuario).map(usuarioDto -> ResponseEntity.ok().body(UsuarioMapper.toResponse(usuarioDto))).orElseGet(() -> ResponseEntity.noContent().build());
+        return usuarioService.pegarPerfil(usuario).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping(value = "/endereco")

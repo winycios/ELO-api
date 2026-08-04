@@ -22,8 +22,8 @@ public class PublicacaoImagem {
     @JoinColumn(name = "fk_publicacao_id", nullable = false)
     private Publicacao publicacao;
 
-    @Column(name = "url_imagem", length = 500)
-    private String url;
+    @Column(name = "ds_chave_imagem", length = 500)
+    private String chave;
 
     @Column(name = "nr_ordem")
     private Integer ordem;

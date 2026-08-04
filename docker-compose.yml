@@ -1,4 +1,27 @@
 services:
+  mysql:
+    image: mysql:8.4
+    container_name: elo-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: database_elo
+      MYSQL_USER: ${DB_USERNAME:-user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-1234}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-1234}
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./src/main/resources/db/script.sql:/docker-entrypoint-initdb.d/01-script.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - elo-network
+
   redis:
     image: redis:8-alpine
     container_name: elo-redis
@@ -65,9 +88,62 @@ services:
     networks:
       - elo-network
 
+  # minIO
+  # API S3 em 9000, console web em http://localhost:9001
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: elo-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-elo-local}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-elo-local-secret}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: [ "CMD-SHELL", "mc ready local || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    networks:
+      - elo-network
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    container_name: elo-minio-init
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-elo-local}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-elo-local-secret}
+      BUCKET_PUBLICO: ${STORAGE_BUCKET_PUBLICO:-elo-publico}
+      BUCKET_PRIVADO: ${STORAGE_BUCKET_PRIVADO:-elo-privado}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        until mc alias set elo http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; do
+          echo "aguardando o minio subir..."
+          sleep 2
+        done
+        mc mb --ignore-existing "elo/$$BUCKET_PUBLICO"
+        mc mb --ignore-existing "elo/$$BUCKET_PRIVADO"
+        mc anonymous set download "elo/$$BUCKET_PUBLICO"
+        mc anonymous set none "elo/$$BUCKET_PRIVADO"
+        echo "buckets prontos: $$BUCKET_PUBLICO (publico) e $$BUCKET_PRIVADO (privado)"
+    networks:
+      - elo-network
+
 volumes:
+  mysql-data:
   elasticsearch-data:
   mailpit-data:
+  minio-data:
 
 networks:
   elo-network:

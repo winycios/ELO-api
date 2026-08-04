@@ -12,6 +12,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.function.UnaryOperator;
 
 @Component
 @AllArgsConstructor
@@ -35,7 +37,7 @@ public final class ServicoMapper {
     }
 
     public static ServicoRS toResponse(Servico servico) {
-        return toResponse(servico, List.of(), List.of());
+        return toResponse(servico, List.of(), List.of(), UnaryOperator.identity());
     }
 
     public static ServicoListaRS toListResponse(Servico servico) {
@@ -52,7 +54,7 @@ public final class ServicoMapper {
         );
     }
 
-    public static ServicoRS toResponse(Servico servico, List<ServicoImagem> imagens, List<ServicoDisponibilidade> disponibilidades) {
+    public static ServicoRS toResponse(Servico servico, List<ServicoImagem> imagens, List<ServicoDisponibilidade> disponibilidades, UnaryOperator<String> resolverImagem) {
         return new ServicoRS(
                 servico.getId(),
                 servico.getProfissional().getId(),
@@ -61,9 +63,10 @@ public final class ServicoMapper {
                         servico.getCategoriaEspecifica().getCategoriaGeral().getId()
                 ),
                 imagens.stream()
+                        .filter(imagem -> Objects.nonNull(imagem.getChave()))
                         .map(imagem -> new ServicoRS.ServicoImagemRS(
                                 imagem.getId(),
-                                imagem.getUrl(),
+                                resolverImagem.apply(imagem.getChave()),
                                 imagem.getOrdem()
                         ))
                         .toList(),

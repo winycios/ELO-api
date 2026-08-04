@@ -376,7 +376,7 @@ CREATE INDEX `fk_Orcamento_endereco_Orcamento1_idx` ON `database_elo`.`orcamento
 CREATE TABLE IF NOT EXISTS `database_elo`.`orcamento_imagem`
 (
     `id_orcamento_imagem` INT          NOT NULL AUTO_INCREMENT,
-    `url_imagem`          VARCHAR(500) NOT NULL,
+    `ds_chave_imagem`     VARCHAR(500) NOT NULL,
     `fk_id_orcamento`     INT          NOT NULL,
     PRIMARY KEY (`id_orcamento_imagem`),
     CONSTRAINT `fk_Orcamento_Imagem_Orcamento`
@@ -484,7 +484,7 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`publicacao_imagem`
 (
     `id_publicacao_Imagem` INT          NOT NULL AUTO_INCREMENT,
     `fk_publicacao_id`     INT          NOT NULL,
-    `url_imagem`           VARCHAR(500) NULL DEFAULT NULL,
+    `ds_chave_imagem`      VARCHAR(500) NULL DEFAULT NULL,
     `nr_ordem`             INT          NULL DEFAULT NULL,
     PRIMARY KEY (`id_publicacao_Imagem`),
     CONSTRAINT `fk_Publicacao_Imagem_Publicacao1`
@@ -650,7 +650,7 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`servico_imagem`
 (
     `id_servico_imagem` INT          NOT NULL AUTO_INCREMENT,
     `fk_id_servico`     INT          NOT NULL,
-    `url_imagem`        VARCHAR(500) NULL DEFAULT NULL,
+    `ds_chave_imagem`   VARCHAR(500) NULL DEFAULT NULL,
     `nr_ordem`          INT          NULL DEFAULT NULL,
     PRIMARY KEY (`id_servico_imagem`),
     CONSTRAINT `fk_Servico_Imagem_Servico`

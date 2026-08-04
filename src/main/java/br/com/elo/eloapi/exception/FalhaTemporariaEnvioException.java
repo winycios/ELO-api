@@ -1,4 +1,4 @@
-package br.com.elo.eloapi.service.notificacao.canal;
+package br.com.elo.eloapi.exception;
 
 public class FalhaTemporariaEnvioException extends RuntimeException {
 

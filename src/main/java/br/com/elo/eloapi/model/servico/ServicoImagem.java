@@ -20,8 +20,9 @@ public class ServicoImagem {
     @JoinColumn(name = "fk_id_servico", nullable = false)
     private Servico servico;
 
-    @Column(name = "url_imagem", length = 500)
-    private String url;
+    /** Chave do objeto no bucket público. A URL é resolvida na leitura. */
+    @Column(name = "ds_chave_imagem", length = 500)
+    private String chave;
 
     @Column(name = "nr_ordem")
     private Integer ordem;

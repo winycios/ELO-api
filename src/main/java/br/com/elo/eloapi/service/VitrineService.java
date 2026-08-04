@@ -9,6 +9,8 @@ import br.com.elo.eloapi.model.publicacao.dto.*;
 import br.com.elo.eloapi.model.publicacao.mapper.PublicacaoMapper;
 import br.com.elo.eloapi.model.usuario.Usuario;
 import br.com.elo.eloapi.repository.*;
+import br.com.elo.eloapi.model.storage.EscopoImagem;
+import br.com.elo.eloapi.service.storage.ImagemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,6 +33,15 @@ public class VitrineService {
     private final CategoriaEspecificaRepository categoriaEspecificaRepository;
     private final CursorCodec cursorCodec;
     private final ProfissionalRepository profissionalRepository;
+    private final ImagemService imagemService;
+
+    private UnaryOperator<String> resolverImagemPublicacao() {
+        return imagemService.resolvedorDeUrl(EscopoImagem.PUBLICACAO);
+    }
+
+    private UnaryOperator<String> resolverImagemPerfil() {
+        return imagemService.resolvedorDeUrl(EscopoImagem.PERFIL);
+    }
 
     @Transactional(readOnly = true)
     public CursorPageRS<PublicacaoFeedRS> listarFeed(Long categoriaId, String cursor, Usuario usuario, Boolean isProfissional) {
@@ -46,11 +58,7 @@ public class VitrineService {
         }
 
         List<Long> ids = pagina.stream().map(Publicacao::getId).toList();
-        Map<Long, List<PublicacaoImagemRS>> imagens = imagemRepository
-                .findByPublicacaoIdInOrderByPublicacaoIdAscOrdemAsc(ids).stream()
-                .collect(Collectors.groupingBy(
-                        imagem -> imagem.getPublicacao().getId(), Collectors.mapping(PublicacaoMapper::toImageResponse, Collectors.toList())));
-
+        Map<Long, List<PublicacaoImagemRS>> imagens = imagemRepository.findByPublicacaoIdInOrderByPublicacaoIdAscOrdemAsc(ids).stream().collect(Collectors.groupingBy(imagem -> imagem.getPublicacao().getId(), Collectors.mapping(imagem -> PublicacaoMapper.toImageResponse(imagem, resolverImagemPublicacao()), Collectors.toList())));
         Map<Long, br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida> curtidas;
         if (usuario != null) {
             curtidas = curtidaRepository.contarPorPublicacoesECurtida(ids, usuario.getId()).stream().collect(Collectors.toMap(PublicacaoCurtidaRepository.Contagem::getPublicacaoId, curtida -> new br.com.elo.eloapi.model.publicacao.dto.PublicacaoCurtida(curtida.getPublicacaoId(), curtida.getTotal(), curtida.getCurtida())));
@@ -60,7 +68,7 @@ public class VitrineService {
 
         Map<Long, Long> comentarios = comentarioRepository.contarAtivosPorPublicacoes(ids).stream().collect(Collectors.toMap(PublicacaoComentarioRepository.Contagem::getPublicacaoId, PublicacaoComentarioRepository.Contagem::getTotal));
 
-        List<PublicacaoFeedRS> items = pagina.stream().map(publicacao -> PublicacaoMapper.toFeedResponse(publicacao, imagens, curtidas, comentarios)).toList();
+        List<PublicacaoFeedRS> items = pagina.stream().map(publicacao -> PublicacaoMapper.toFeedResponse(publicacao, imagens, curtidas, comentarios, resolverImagemPerfil())).toList();
         Publicacao ultimo = pagina.get(pagina.size() - 1);
         String nextCursor = hasNext ? cursorCodec.encode(ultimo.getDtPublicacao(), ultimo.getId()) : null;
         return new CursorPageRS<>(items, nextCursor, hasNext);
@@ -93,7 +101,7 @@ public class VitrineService {
         }
 
         PublicacaoComentario comentario = comentarioRepository.save(new PublicacaoComentario(publicacao, usuario, pai, request.texto().trim()));
-        return PublicacaoMapper.toCommentResponse(comentario);
+        return PublicacaoMapper.toCommentResponse(comentario, resolverImagemPerfil());
     }
 
     @Transactional(readOnly = true)
@@ -107,7 +115,7 @@ public class VitrineService {
         boolean hasNext = encontrados.size() > PAGE_SIZE;
 
         List<PublicacaoComentario> pagina = encontrados.stream().limit(PAGE_SIZE).toList();
-        List<ComentarioRS> items = pagina.stream().map(PublicacaoMapper::toCommentResponse).toList();
+        List<ComentarioRS> items = pagina.stream().map(comentario -> PublicacaoMapper.toCommentResponse(comentario, resolverImagemPerfil())).toList();
         String nextCursor = null;
         if (hasNext) {
             PublicacaoComentario ultimo = pagina.get(pagina.size() - 1);
@@ -127,10 +135,11 @@ public class VitrineService {
         publicacao = publicacaoRepository.save(publicacao);
 
         Publicacao finalPublicacao = publicacao;
+        imagemService.validarChaves(EscopoImagem.PUBLICACAO, publicacaoCreateRQ.publicacaoImagemRQList().stream().map(PublicacaoImagemRQ::chaveImagem).toList());
         List<PublicacaoImagem> imagens = imagemRepository.saveAll(publicacaoCreateRQ.publicacaoImagemRQList().stream().map(image -> PublicacaoMapper.toImageEntity(image, finalPublicacao)).toList());
 
-        Map<Long, List<PublicacaoImagemRS>> imagensPorPublicacao = Map.of(publicacao.getId(), imagens.stream().map(PublicacaoMapper::toImageResponse).toList());
-        return PublicacaoMapper.toFeedResponse(publicacao, imagensPorPublicacao, Map.of(), Map.of());
+        Map<Long, List<PublicacaoImagemRS>> imagensPorPublicacao = Map.of(publicacao.getId(), imagens.stream().map(imagem -> PublicacaoMapper.toImageResponse(imagem, resolverImagemPublicacao())).toList());
+        return PublicacaoMapper.toFeedResponse(publicacao, imagensPorPublicacao, Map.of(), Map.of(), resolverImagemPerfil());
     }
 
     @Transactional

@@ -7,6 +7,8 @@ import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.repository.AreaAtendimentoRepository;
 import br.com.elo.eloapi.repository.ProfissionalRepository;
 import br.com.elo.eloapi.repository.ServicoRepository;
+import br.com.elo.eloapi.model.storage.EscopoImagem;
+import br.com.elo.eloapi.service.storage.ImagemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ public class ProfissionalSearchDocumentLoader {
     private final ProfissionalRepository profissionalRepository;
     private final ServicoRepository servicoRepository;
     private final AreaAtendimentoRepository areaAtendimentoRepository;
+    private final ImagemService imagemService;
 
     @Transactional(readOnly = true)
     public Map<Long, ProfissionalSearchDocument> carregar(Collection<Long> profissionalIds) {
@@ -89,7 +92,7 @@ public class ProfissionalSearchDocumentLoader {
         return new ProfissionalSearchDocument(
                 profissional.getId(),
                 profissional.getUsuario().nomeCompleto(),
-                fotoPerfil,
+                imagemService.urlLeitura(EscopoImagem.PERFIL, fotoPerfil),
                 true,
                 Boolean.TRUE.equals(profissional.getStDisponivel()),
                 profissional.getUsuario().getQtAvaliacaoGeral(),

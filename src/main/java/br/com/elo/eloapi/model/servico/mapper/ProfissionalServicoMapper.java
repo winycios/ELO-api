@@ -7,6 +7,9 @@ import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
 import br.com.elo.eloapi.model.servico.ServicoImagem;
 import br.com.elo.eloapi.model.usuario.Usuario;
+import br.com.elo.eloapi.model.storage.EscopoImagem;
+import br.com.elo.eloapi.service.storage.ImagemService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,7 +19,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 public class ProfissionalServicoMapper {
+
+    private final ImagemService imagemService;
 
     public ProfissionalServicoRS toResponse(
             Profissional profissional,
@@ -90,7 +96,7 @@ public class ProfissionalServicoMapper {
         return new ProfissionalServicoRS.ProfissionalDetalhesRS(
                 profissional.getId(),
                 profissional.getUsuario().nomeCompleto(),
-                fotoPerfil,
+                imagemService.urlLeitura(EscopoImagem.PERFIL, fotoPerfil),
                 profissional.getDsApresentacao(),
                 profissional.getDsEspecialidades(),
                 profissional.getUsuario().getQtAvaliacaoGeral(),
@@ -134,7 +140,7 @@ public class ProfissionalServicoMapper {
                 avaliacao.getId(),
                 avaliador.getId(),
                 avaliador.nomeCompleto(),
-                avaliador.getUriPerfil(),
+                imagemService.urlLeitura(EscopoImagem.PERFIL, avaliador.getUriPerfil()),
                 avaliacao.getNota(),
                 avaliacao.getComentario(),
                 avaliacao.getDtCriacao()
@@ -155,7 +161,7 @@ public class ProfissionalServicoMapper {
     private ProfissionalServicoRS.ImagemRS toImagemResponse(ServicoImagem imagem) {
         return new ProfissionalServicoRS.ImagemRS(
                 imagem.getId(),
-                imagem.getUrl(),
+                imagemService.urlLeitura(EscopoImagem.SERVICO, imagem.getChave()),
                 imagem.getOrdem()
         );
     }

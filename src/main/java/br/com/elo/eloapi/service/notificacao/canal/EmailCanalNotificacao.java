@@ -1,6 +1,11 @@
 package br.com.elo.eloapi.service.notificacao.canal;
 
+import br.com.elo.eloapi.exception.FalhaPermanenteEnvioException;
+import br.com.elo.eloapi.exception.FalhaTemporariaEnvioException;
+import br.com.elo.eloapi.implementation.CanalEnvioNotificacao;
 import br.com.elo.eloapi.model.notificacao.CanalNotificacao;
+import br.com.elo.eloapi.model.notificacao.dto.ComandoEnvioNotificacao;
+import br.com.elo.eloapi.model.notificacao.dto.ResultadoEnvioNotificacao;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.MailAuthenticationException;

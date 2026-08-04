@@ -16,6 +16,8 @@ import br.com.elo.eloapi.repository.EnderecoRepository;
 import br.com.elo.eloapi.repository.RedisStore;
 import br.com.elo.eloapi.repository.UsuarioRepository;
 import br.com.elo.eloapi.service.search.SearchOutboxService;
+import br.com.elo.eloapi.model.storage.EscopoImagem;
+import br.com.elo.eloapi.service.storage.ImagemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ public class UsuarioService {
     private final AwesomeApiCepClient awesomeApiCepClient;
     private final SearchOutboxService searchOutboxService;
     private final RedisStore redisStore;
+    private final ImagemService imagemService;
 
     @Transactional
     public UsuarioRS editarPerfil(Usuario usuarioAutenticado, UsuarioEditRQ usuarioEditRQ) {
@@ -42,15 +45,23 @@ public class UsuarioService {
         usuario.setEmail(usuarioEditRQ.email());
         usuario.setTelCelular(usuarioEditRQ.telContato());
         usuario.setTelWhats(usuarioEditRQ.telContatoZap());
+        if (usuarioEditRQ.chaveImagem() != null) {
+            imagemService.validarChave(EscopoImagem.PERFIL, usuarioEditRQ.chaveImagem());
+            usuario.setUriPerfil(usuarioEditRQ.chaveImagem());
+        }
 
         usuario = usuarioRepository.save(usuario);
         redisStore.deletarNoCache(String.format(RedisStore.KEY_PROFESSIONAL_DETAILS_PATTERN, usuario.getId()));
         searchOutboxService.solicitarReindexacao(usuario.getId());
-        return UsuarioMapper.toResponse(usuario);
+        return toResponse(usuario);
     }
 
-    public Optional<Usuario> pegarPerfil(Usuario usuario) {
-        return usuarioRepository.findById(usuario.getId());
+    public Optional<UsuarioRS> pegarPerfil(Usuario usuario) {
+        return usuarioRepository.findById(usuario.getId()).map(this::toResponse);
+    }
+
+    private UsuarioRS toResponse(Usuario usuario) {
+        return UsuarioMapper.toResponse(usuario, imagemService.resolvedorDeUrl(EscopoImagem.PERFIL));
     }
 
     @Transactional
