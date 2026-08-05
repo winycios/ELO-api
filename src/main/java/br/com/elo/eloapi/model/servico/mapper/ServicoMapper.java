@@ -67,6 +67,7 @@ public final class ServicoMapper {
                         .map(imagem -> new ServicoRS.ServicoImagemRS(
                                 imagem.getId(),
                                 resolverImagem.apply(imagem.getChave()),
+                                imagem.getChave(),
                                 imagem.getOrdem()
                         ))
                         .toList(),

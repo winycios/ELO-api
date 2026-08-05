@@ -17,7 +17,7 @@ public record ServicoRS(Long id,
     public record ServicoCategoriaRS(Long idCategoriaEspecifica, Long idCategoriaGeral) {
     }
 
-    public record ServicoImagemRS(Long idServicoImagem, String url, Integer ordem) {
+    public record ServicoImagemRS(Long idServicoImagem, String chave, String url, Integer ordem) {
     }
 
     public record ServicoDisponibilidadeRS(Long idServicoDisponibilidade,
