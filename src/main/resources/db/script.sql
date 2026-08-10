@@ -663,6 +663,74 @@ CREATE TABLE IF NOT EXISTS `database_elo`.`servico_imagem`
 CREATE INDEX `fk_Servico_Imagem_Servico_idx` ON `database_elo`.`servico_imagem` (`fk_id_servico` ASC) VISIBLE;
 
 
+CREATE TABLE IF NOT EXISTS `database_elo`.`avaliacao_analise_pln`
+(
+    `id_avaliacao_analise_pln` BIGINT                                NOT NULL AUTO_INCREMENT,
+    `fk_id_avaliacao_reserva`  INT                                   NOT NULL,
+    `fk_id_profissional`       INT                                   NOT NULL,
+    `tp_sentimento`            ENUM ('POSITIVO','NEUTRO','NEGATIVO') NOT NULL,
+    `nr_confianca`             DECIMAL(5, 4)                         NOT NULL,
+    `st_possui_inconsistencia` TINYINT(1)                            NOT NULL DEFAULT 0,
+    `js_aspectos`              JSON                                  NULL,
+    `cd_versao_modelo`         VARCHAR(64)                           NOT NULL,
+    `dt_processamento`         DATETIME(3)                           NOT NULL,
+    PRIMARY KEY (`id_avaliacao_analise_pln`),
+    CONSTRAINT `uk_avaliacao_analise_pln_avaliacao`
+    UNIQUE (`fk_id_avaliacao_reserva`),
+    CONSTRAINT `ck_avaliacao_analise_pln_confianca`
+    CHECK (`nr_confianca` BETWEEN 0 AND 1),
+    CONSTRAINT `fk_Avaliacao_Analise_Pln_Avaliacao_Reserva`
+    FOREIGN KEY (`fk_id_avaliacao_reserva`)
+    REFERENCES `database_elo`.`avaliacao_reserva` (`id_avaliacao_reserva`)
+    ON DELETE CASCADE,
+    CONSTRAINT `fk_Avaliacao_Analise_Pln_Profissional`
+    FOREIGN KEY (`fk_id_profissional`)
+    REFERENCES `database_elo`.`profissional` (`usuario_id`)
+    ON DELETE CASCADE
+    )
+    ENGINE = InnoDB
+    DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE INDEX `idx_avaliacao_analise_pln_profissional`
+    ON `database_elo`.`avaliacao_analise_pln` (`fk_id_profissional` ASC) VISIBLE;
+
+CREATE INDEX `idx_avaliacao_analise_pln_versao`
+    ON `database_elo`.`avaliacao_analise_pln` (`cd_versao_modelo` ASC) VISIBLE;
+
+
+CREATE TABLE IF NOT EXISTS `database_elo`.`profissional_reputacao_pln`
+(
+    `id_profissional_reputacao_pln` BIGINT        NOT NULL AUTO_INCREMENT,
+    `fk_id_profissional`            INT           NOT NULL,
+    `qt_comentarios_processados`    INT           NOT NULL DEFAULT 0,
+    `qt_positivo`                   INT           NOT NULL DEFAULT 0,
+    `qt_neutro`                     INT           NOT NULL DEFAULT 0,
+    `qt_negativo`                   INT           NOT NULL DEFAULT 0,
+    `nr_percentual_positivo`        DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    `nr_percentual_neutro`          DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    `nr_percentual_negativo`        DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    `nr_sentimento_medio`           DECIMAL(5, 4) NOT NULL DEFAULT 0,
+    `qt_inconsistencias`            INT           NOT NULL DEFAULT 0,
+    `nr_taxa_inconsistencia`        DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    `js_pontos_fortes`              JSON          NULL,
+    `js_pontos_fracos`              JSON          NULL,
+    `ds_resumo`                     VARCHAR(500)  NULL,
+    `cd_versao_modelo`              VARCHAR(64)   NOT NULL,
+    `dt_atualizacao`                DATETIME(3)   NOT NULL,
+    PRIMARY KEY (`id_profissional_reputacao_pln`),
+    CONSTRAINT `uk_profissional_reputacao_pln_profissional`
+    UNIQUE (`fk_id_profissional`),
+    CONSTRAINT `fk_Profissional_Reputacao_Pln_Profissional`
+    FOREIGN KEY (`fk_id_profissional`)
+    REFERENCES `database_elo`.`profissional` (`usuario_id`)
+    ON DELETE CASCADE
+    )
+    ENGINE = InnoDB
+    DEFAULT CHARACTER SET = utf8mb3;
+
+CREATE INDEX `idx_profissional_reputacao_pln_atualizacao`
+    ON `database_elo`.`profissional_reputacao_pln` (`dt_atualizacao` ASC) VISIBLE;
+
 SET SQL_MODE = @OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS = @OLD_UNIQUE_CHECKS;
