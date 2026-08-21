@@ -1,3 +1,5 @@
+SET NAMES utf8mb4;
+
 -- primeiro os usuarios
 INSERT INTO database_elo.usuario (id_usuario, nm_nome, nm_sobrenome, ds_email, senha, dt_criacao, tel_celular,
                                   tel_whats, qt_avaliacao_geral, qt_avaliacoes, uri_perfil, st_habilitado)

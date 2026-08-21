@@ -13,6 +13,12 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
       - ./src/main/resources/db/script.sql:/docker-entrypoint-initdb.d/01-script.sql:ro
+      - ./src/main/resources/db/categorias_seed.sql:/docker-entrypoint-initdb.d/02-categorias.sql:ro
+      - ./src/main/resources/db/orcamento_status_seed.sql:/docker-entrypoint-initdb.d/03-orcamento-status.sql:ro
+      - ./src/main/resources/db/users_seed.sql:/docker-entrypoint-initdb.d/04-users.sql:ro
+      - ./src/main/resources/db/servicos_seed.sql:/docker-entrypoint-initdb.d/05-servicos.sql:ro
+      - ./src/main/resources/db/vitrine_seed.sql:/docker-entrypoint-initdb.d/06-vitrine.sql:ro
+      - ./src/main/resources/db/avaliacoes_seed.sql:/docker-entrypoint-initdb.d/07-avaliacoes.sql:ro
     healthcheck:
       test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent" ]
       interval: 5s

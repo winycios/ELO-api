@@ -1,3 +1,5 @@
+SET NAMES utf8mb4;
+
 INSERT INTO categoria_geral (nm_categoria, ds_icon)
 VALUES
     ('Eletricista', 'Bolt'),

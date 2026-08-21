@@ -42,6 +42,7 @@ public class ProfissionalDetalhesService {
     private final AreaAtendimentoRepository areaAtendimentoRepository;
     private final ProfissionalRepository profissionalRepository;
     private final AvaliacaoReservaRepository avaliacaoRepository;
+    private final ProfissionalReputacaoPlnRepository reputacaoPlnRepository;
     private final RedisStore redisStore;
     private final ProfissionalServicoMapper profissionalServicoMapper;
     private final CategoriaEspecificaRepository categoriaEspecificaRepository;
@@ -75,7 +76,12 @@ public class ProfissionalDetalhesService {
             origem = enderecoRepository.findByUsuarioIdAndStPrincipalTrue(usuario.getId()).orElse(null);
             destino = areaAtendimentoRepository.findAreaAtendimentoByProfissional_Id(profissionalId).orElse(null);
         }
-        return profissionalServicoMapper.comDistancia(detalhes, calcularDistancia(usuario, destino, origem));
+
+        ProfissionalServicoRS comDistancia = profissionalServicoMapper.comDistancia(detalhes, calcularDistancia(usuario, destino, origem));
+        return profissionalServicoMapper.comReputacao(
+                comDistancia,
+                reputacaoPlnRepository.findByProfissionalId(profissionalId).orElse(null)
+        );
     }
 
     @Transactional(readOnly = true)

@@ -16,12 +16,28 @@ public record ProfissionalSearchDocument(
         String cidade,
         String estado,
         String bairro,
-        List<ServicoSearch> servicos
+        List<ServicoSearch> servicos,
+        ReputacaoPlnSearch reputacaoPln
 ) {
 
     public record LocalizacaoSearch(
             Double lat,
             Double lon
+    ) {
+    }
+
+    public record ReputacaoPlnSearch(
+            Integer comentariosProcessados,
+            Double percentualPositivo,
+            Double percentualNeutro,
+            Double percentualNegativo,
+            Double sentimentoMedio,
+            Double taxaInconsistencia,
+            List<String> pontosFortes,
+            List<String> pontosFracos,
+            String resumo,
+            String versaoModelo,
+            String dataAtualizacao
     ) {
     }
 

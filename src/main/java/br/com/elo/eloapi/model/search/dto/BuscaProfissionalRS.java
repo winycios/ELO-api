@@ -22,7 +22,18 @@ public record BuscaProfissionalRS(
             String cidade,
             String estado,
             String bairro,
-            List<ServicoBuscaRS> servicos
+            List<ServicoBuscaRS> servicos,
+            ReputacaoBuscaRS reputacao
+    ) {
+    }
+
+    public record ReputacaoBuscaRS(
+            Integer comentariosProcessados,
+            Double percentualPositivo,
+            Double sentimentoMedio,
+            List<String> pontosFortes,
+            List<String> pontosFracos,
+            String resumo
     ) {
     }
 

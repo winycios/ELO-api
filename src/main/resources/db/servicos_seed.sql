@@ -1,3 +1,5 @@
+SET NAMES utf8mb4;
+
 USE database_elo;
 
 DROP TEMPORARY TABLE IF EXISTS tmp_seed_servico;

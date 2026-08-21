@@ -8,7 +8,8 @@ public record ProfissionalServicoRS(
         ServicoOferecidoRS servicoSelecionado,
         List<ServicoOferecidoRS> servicosOferecidos,
         ResumoAvaliacoesRS resumoAvaliacoes,
-        List<AvaliacaoRS> ultimasAvaliacoes
+        List<AvaliacaoRS> ultimasAvaliacoes,
+        ReputacaoRS reputacao
 ) {
 
     public record ProfissionalDetalhesRS(
@@ -73,6 +74,17 @@ public record ProfissionalServicoRS(
             Integer nota,
             String comentario,
             LocalDateTime dataCriacao
+    ) {
+    }
+    public record ReputacaoRS(
+            Integer comentariosProcessados,
+            Double percentualPositivo,
+            Double percentualNeutro,
+            Double percentualNegativo,
+            Double sentimentoMedio,
+            List<String> pontosFortes,
+            List<String> pontosFracos,
+            String resumo
     ) {
     }
 }

@@ -2,9 +2,11 @@ package br.com.elo.eloapi.service.search;
 
 import br.com.elo.eloapi.model.areaAtendimento.AreaAtendimento;
 import br.com.elo.eloapi.model.profissional.Profissional;
+import br.com.elo.eloapi.model.reputacao.ProfissionalReputacaoPln;
 import br.com.elo.eloapi.model.search.ProfissionalSearchDocument;
 import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.repository.AreaAtendimentoRepository;
+import br.com.elo.eloapi.repository.ProfissionalReputacaoPlnRepository;
 import br.com.elo.eloapi.repository.ProfissionalRepository;
 import br.com.elo.eloapi.repository.ServicoRepository;
 import br.com.elo.eloapi.model.storage.EscopoImagem;
@@ -27,6 +29,7 @@ public class ProfissionalSearchDocumentLoader {
     private final ProfissionalRepository profissionalRepository;
     private final ServicoRepository servicoRepository;
     private final AreaAtendimentoRepository areaAtendimentoRepository;
+    private final ProfissionalReputacaoPlnRepository reputacaoPlnRepository;
     private final ImagemService imagemService;
 
     @Transactional(readOnly = true)
@@ -52,6 +55,16 @@ public class ProfissionalSearchDocumentLoader {
                         LinkedHashMap::new
                 ));
 
+        Map<Long, ProfissionalReputacaoPln> reputacaoPorProfissional = reputacaoPlnRepository
+                .findAllByProfissionalIdIn(profissionalIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        ProfissionalReputacaoPln::getProfissionalId,
+                        Function.identity(),
+                        (primeira, ignorada) -> primeira,
+                        LinkedHashMap::new
+                ));
+
         Map<Long, ProfissionalSearchDocument> documentos = new LinkedHashMap<>();
         for (Profissional profissional : profissionais) {
             List<Servico> servicosAtivos = servicosPorProfissional.getOrDefault(profissional.getId(), List.of());
@@ -60,7 +73,12 @@ public class ProfissionalSearchDocumentLoader {
                 continue;
             }
 
-            documentos.put(profissional.getId(), toDocument(profissional, area, servicosAtivos));
+            documentos.put(profissional.getId(), toDocument(
+                    profissional,
+                    area,
+                    servicosAtivos,
+                    reputacaoPorProfissional.get(profissional.getId())
+            ));
         }
         return documentos;
     }
@@ -86,7 +104,12 @@ public class ProfissionalSearchDocumentLoader {
                 && longitude <= 180.0;
     }
 
-    private ProfissionalSearchDocument toDocument(Profissional profissional, AreaAtendimento area, List<Servico> servicos) {
+    private ProfissionalSearchDocument toDocument(
+            Profissional profissional,
+            AreaAtendimento area,
+            List<Servico> servicos,
+            ProfissionalReputacaoPln reputacao
+    ) {
         String fotoPerfil = profissional.getUriPerfil() != null ? profissional.getUriPerfil() : profissional.getUsuario().getUriPerfil();
 
         return new ProfissionalSearchDocument(
@@ -103,7 +126,28 @@ public class ProfissionalSearchDocumentLoader {
                 area == null ? null : area.getNmCidade(),
                 area == null ? null : area.getNmEstado(),
                 area == null ? null : area.getNmBairro(),
-                servicos.stream().map(this::toServico).toList()
+                servicos.stream().map(this::toServico).toList(),
+                toReputacao(reputacao)
+        );
+    }
+
+    private ProfissionalSearchDocument.ReputacaoPlnSearch toReputacao(ProfissionalReputacaoPln reputacao) {
+        if (reputacao == null) {
+            return null;
+        }
+
+        return new ProfissionalSearchDocument.ReputacaoPlnSearch(
+                reputacao.getComentariosProcessados(),
+                reputacao.getPercentualPositivo(),
+                reputacao.getPercentualNeutro(),
+                reputacao.getPercentualNegativo(),
+                reputacao.getSentimentoMedio(),
+                reputacao.getTaxaInconsistencia(),
+                reputacao.getPontosFortes(),
+                reputacao.getPontosFracos(),
+                reputacao.getResumo(),
+                reputacao.getVersaoModelo(),
+                reputacao.getDtAtualizacao() == null ? null : reputacao.getDtAtualizacao().toString()
         );
     }
 

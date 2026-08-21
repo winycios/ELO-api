@@ -8,6 +8,7 @@ import br.com.elo.eloapi.model.search.dto.BuscaProfissionalRS;
 import br.com.elo.eloapi.model.search.dto.OrdenacaoBuscaProfissional;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.DistanceUnit;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -28,6 +29,8 @@ import static br.com.elo.eloapi.Util.Utils.calculaDistancia;
 @Service
 @RequiredArgsConstructor
 public class BuscaProfissionalService {
+
+    private static final double SENTIMENTO_NEUTRO = 0.5;
 
     private final ElasticsearchClient elasticsearchClient;
     private final ProfissionalSearchIndexManager indexManager;
@@ -152,11 +155,21 @@ public class BuscaProfissionalService {
         if (possuiCoordenadas(filtro)) {
             adicionarOrdenacaoDistancia(request, filtro);
         }
-        adicionarOrdenacaoAvaliacao(request);
+        adicionarOrdenacaoRecomendados(request);
     }
 
     private void adicionarOrdenacaoAvaliacao(SearchRequest.Builder request) {
         request.sort(sort -> sort.field(field -> field.field("avaliacao").order(SortOrder.Desc)));
+        request.sort(sort -> sort.field(field -> field.field("quantidadeAvaliacoes").order(SortOrder.Desc)));
+        request.sort(sort -> sort.field(field -> field.field("servicosConcluidos").order(SortOrder.Desc)));
+    }
+
+    private void adicionarOrdenacaoRecomendados(SearchRequest.Builder request) {
+        request.sort(sort -> sort.field(field -> field.field("avaliacao").order(SortOrder.Desc)));
+        request.sort(sort -> sort.field(field -> field
+                .field("reputacaoPln.sentimentoMedio")
+                .order(SortOrder.Desc)
+                .missing(FieldValue.of(SENTIMENTO_NEUTRO))));
         request.sort(sort -> sort.field(field -> field.field("quantidadeAvaliacoes").order(SortOrder.Desc)));
         request.sort(sort -> sort.field(field -> field.field("servicosConcluidos").order(SortOrder.Desc)));
     }
@@ -216,7 +229,23 @@ public class BuscaProfissionalService {
                 documento.cidade(),
                 documento.estado(),
                 documento.bairro(),
-                servicos
+                servicos,
+                toReputacao(documento.reputacaoPln())
+        );
+    }
+
+    private BuscaProfissionalRS.ReputacaoBuscaRS toReputacao(ProfissionalSearchDocument.ReputacaoPlnSearch reputacao) {
+        if (reputacao == null) {
+            return null;
+        }
+
+        return new BuscaProfissionalRS.ReputacaoBuscaRS(
+                reputacao.comentariosProcessados(),
+                reputacao.percentualPositivo(),
+                reputacao.sentimentoMedio(),
+                reputacao.pontosFortes(),
+                reputacao.pontosFracos(),
+                reputacao.resumo()
         );
     }
 

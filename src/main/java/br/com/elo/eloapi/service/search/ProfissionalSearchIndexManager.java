@@ -50,6 +50,23 @@ public class ProfissionalSearchIndexManager {
                   "cidade": { "type": "keyword" },
                   "estado": { "type": "keyword" },
                   "bairro": { "type": "keyword" },
+                  "reputacaoPln": {
+                    "type": "object",
+                    "dynamic": "strict",
+                    "properties": {
+                      "comentariosProcessados": { "type": "integer" },
+                      "percentualPositivo": { "type": "float" },
+                      "percentualNeutro": { "type": "float" },
+                      "percentualNegativo": { "type": "float" },
+                      "sentimentoMedio": { "type": "float" },
+                      "taxaInconsistencia": { "type": "float" },
+                      "pontosFortes": { "type": "keyword" },
+                      "pontosFracos": { "type": "keyword" },
+                      "resumo": { "type": "text", "index": false },
+                      "versaoModelo": { "type": "keyword" },
+                      "dataAtualizacao": { "type": "date" }
+                    }
+                  },
                   "servicos": {
                     "type": "nested",
                     "properties": {

@@ -2,6 +2,7 @@ package br.com.elo.eloapi.model.servico.mapper;
 
 import br.com.elo.eloapi.model.avaliacao.AvaliacaoReserva;
 import br.com.elo.eloapi.model.profissional.Profissional;
+import br.com.elo.eloapi.model.reputacao.ProfissionalReputacaoPln;
 import br.com.elo.eloapi.model.servico.ProfissionalServicoRS;
 import br.com.elo.eloapi.model.servico.Servico;
 import br.com.elo.eloapi.model.servico.ServicoDisponibilidade;
@@ -49,7 +50,8 @@ public class ProfissionalServicoMapper {
                 servicosPorId.get(servicoSelecionado.getId()),
                 servicos.stream().map(servico -> servicosPorId.get(servico.getId())).toList(),
                 toResumoAvaliacoesResponse(profissional, percentualAvaliacoesPositivas),
-                ultimasAvaliacoes.stream().map(this::toAvaliacaoResponse).toList()
+                ultimasAvaliacoes.stream().map(this::toAvaliacaoResponse).toList(),
+                null
         );
     }
 
@@ -76,7 +78,32 @@ public class ProfissionalServicoMapper {
                 response.servicoSelecionado(),
                 response.servicosOferecidos(),
                 response.resumoAvaliacoes(),
-                response.ultimasAvaliacoes()
+                response.ultimasAvaliacoes(),
+                response.reputacao()
+        );
+    }
+
+    public ProfissionalServicoRS comReputacao(ProfissionalServicoRS response, ProfissionalReputacaoPln reputacao) {
+        if (reputacao == null) {
+            return response;
+        }
+
+        return new ProfissionalServicoRS(
+                response.profissional(),
+                response.servicoSelecionado(),
+                response.servicosOferecidos(),
+                response.resumoAvaliacoes(),
+                response.ultimasAvaliacoes(),
+                new ProfissionalServicoRS.ReputacaoRS(
+                        reputacao.getComentariosProcessados(),
+                        reputacao.getPercentualPositivo(),
+                        reputacao.getPercentualNeutro(),
+                        reputacao.getPercentualNegativo(),
+                        reputacao.getSentimentoMedio(),
+                        reputacao.getPontosFortes(),
+                        reputacao.getPontosFracos(),
+                        reputacao.getResumo()
+                )
         );
     }
 
