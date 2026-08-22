@@ -12,8 +12,10 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.UnsatisfiedServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -127,7 +129,26 @@ public class CustomExceptionHandler {
         return ResponseEntity.status(status).body(err);
     }
 
-    @ExceptionHandler({NoResourceFoundException.class, MissingServletRequestParameterException.class})
+    @ExceptionHandler({
+            MissingServletRequestParameterException.class,
+            UnsatisfiedServletRequestParameterException.class,
+            MethodArgumentTypeMismatchException.class
+    })
+    public ResponseEntity<ModelError> invalidRequestParameters(Exception e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ModelError err = new ModelError(
+                Instant.now(),
+                status.value(),
+                "Erro de validação",
+                "Os parâmetros enviados são inválidos ou não atendem aos requisitos da requisição.",
+                request.getRequestURI()
+        );
+
+        logger.warn("Parâmetros inválidos em {}: {}", request.getRequestURI(), e.getMessage());
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ModelError> requestException(Exception e, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
         ModelError err = new ModelError(
